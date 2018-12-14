@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import play.Application;
 import play.GlobalSettings;
-import play.libs.WS;
+import play.api.libs.WS;
 import play.test.FakeApplication;
 
 import static common.DBTestUtil.*;

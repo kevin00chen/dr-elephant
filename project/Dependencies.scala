@@ -111,6 +111,8 @@ object Dependencies {
 
   var dependencies = Seq(
 //    "com.typesafe.play" % "play-java-ebean_2.11" % "2.3.9",
+    "com.typesafe.play" % "play_2.11" % "2.4.6",
+    "com.typesafe.play" % "play-ws_2.11" % "2.4.6",
     "com.typesafe.play" % "play-java-jdbc_2.11" % "2.4.6",
     "com.typesafe.play" % "play-cache_2.11" % "2.4.6"
   )

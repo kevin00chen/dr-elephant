@@ -46,11 +46,12 @@ import org.apache.spark.util.collection.OpenHashSet
 class SparkDataCollection extends SparkApplicationData {
   import SparkDataCollection._
 
+  val sparkConf = new SparkConf
   lazy val applicationEventListener = new ApplicationEventListener()
-  lazy val jobProgressListener = new JobProgressListener(new SparkConf())
+  lazy val jobProgressListener = new JobProgressListener(sparkConf)
   lazy val environmentListener = new EnvironmentListener()
-  lazy val storageStatusListener = new StorageStatusListener()
-  lazy val executorsListener = new ExecutorsListener(storageStatusListener)
+  lazy val storageStatusListener = new StorageStatusListener(sparkConf)
+  lazy val executorsListener = new ExecutorsListener(storageStatusListener, sparkConf)
   lazy val storageListener = new StorageListener(storageStatusListener)
 
   // This is a customized listener that tracks peak used memory
@@ -164,10 +165,10 @@ class SparkDataCollection extends SparkApplicationData {
     if (_executorData == null) {
       _executorData = new SparkExecutorData()
 
-      for (statusId <- 0 until executorsListener.storageStatusList.size) {
+      for (statusId <- 0 until executorsListener.activeStorageStatusList.size) {
         val info = new ExecutorInfo()
 
-        val status = executorsListener.storageStatusList(statusId)
+        val status = executorsListener.activeStorageStatusList(statusId)
 
         info.execId = status.blockManagerId.executorId
         info.hostPort = status.blockManagerId.hostPort
@@ -178,15 +179,28 @@ class SparkDataCollection extends SparkApplicationData {
         info.memUsed = storageStatusTrackingListener.executorIdToMaxUsedMem.getOrElse(info.execId, 0L)
         info.maxMem = status.maxMem
         info.diskUsed = status.diskUsed
-        info.activeTasks = executorsListener.executorToTasksActive.getOrElse(info.execId, 0)
-        info.failedTasks = executorsListener.executorToTasksFailed.getOrElse(info.execId, 0)
-        info.completedTasks = executorsListener.executorToTasksComplete.getOrElse(info.execId, 0)
+        val executorToTaskSummary = executorsListener.executorToTaskSummary.get(info.execId)
+        executorToTaskSummary match {
+          case Some(sm) => {
+            info.activeTasks = sm.tasksActive
+            info.failedTasks = sm.tasksFailed
+            info.completedTasks = sm.tasksComplete
+            info.duration = sm.duration
+            info.inputBytes = sm.inputBytes
+            info.shuffleRead = sm.shuffleRead
+            info.shuffleWrite = sm.shuffleWrite
+          }
+          case _ => {
+            info.activeTasks = 0
+            info.failedTasks = 0
+            info.completedTasks = 0
+            info.duration = 0
+            info.inputBytes = 0
+            info.shuffleRead = 0
+            info.shuffleWrite = 0
+          }
+        }
         info.totalTasks = info.activeTasks + info.failedTasks + info.completedTasks
-        info.duration = executorsListener.executorToDuration.getOrElse(info.execId, 0L)
-        info.inputBytes = executorsListener.executorToInputBytes.getOrElse(info.execId, 0L)
-        info.shuffleRead = executorsListener.executorToShuffleRead.getOrElse(info.execId, 0L)
-        info.shuffleWrite = executorsListener.executorToShuffleWrite.getOrElse(info.execId, 0L)
-
         _executorData.setExecutorInfo(info.execId, info)
       }
     }
@@ -223,37 +237,37 @@ class SparkDataCollection extends SparkApplicationData {
 
       // Add Stage Info
       jobProgressListener.stageIdToData.foreach { case (id, data) =>
-          val stageInfo = new SparkJobProgressData.StageInfo()
-          val sparkStageInfo = jobProgressListener.stageIdToInfo.get(id._1)
-          stageInfo.name = sparkStageInfo match {
-            case Some(info: StageInfo) => {
-              info.name
-            }
-            case None => {
-              ""
-            }
+        val stageInfo = new SparkJobProgressData.StageInfo()
+        val sparkStageInfo = jobProgressListener.stageIdToInfo.get(id._1)
+        stageInfo.name = sparkStageInfo match {
+          case Some(info: StageInfo) => {
+            info.name
           }
-          stageInfo.description = data.description.getOrElse("")
-          stageInfo.diskBytesSpilled = data.diskBytesSpilled
-          stageInfo.executorRunTime = data.executorRunTime
-          stageInfo.duration = sparkStageInfo match {
-            case Some(info: StageInfo) => {
-              val submissionTime = info.submissionTime.getOrElse(0L)
-              info.completionTime.getOrElse(submissionTime) - submissionTime
-            }
-            case _ => 0L
+          case None => {
+            ""
           }
-          stageInfo.inputBytes = data.inputBytes
-          stageInfo.memoryBytesSpilled = data.memoryBytesSpilled
-          stageInfo.numActiveTasks = data.numActiveTasks
-          stageInfo.numCompleteTasks = data.numCompleteTasks
-          stageInfo.numFailedTasks = data.numFailedTasks
-          stageInfo.outputBytes = data.outputBytes
-          stageInfo.shuffleReadBytes = data.shuffleReadTotalBytes
-          stageInfo.shuffleWriteBytes = data.shuffleWriteBytes
-          addIntSetToJSet(data.completedIndices, stageInfo.completedIndices)
+        }
+        stageInfo.description = data.description.getOrElse("")
+        stageInfo.diskBytesSpilled = data.diskBytesSpilled
+        stageInfo.executorRunTime = data.executorRunTime
+        stageInfo.duration = sparkStageInfo match {
+          case Some(info: StageInfo) => {
+            val submissionTime = info.submissionTime.getOrElse(0L)
+            info.completionTime.getOrElse(submissionTime) - submissionTime
+          }
+          case _ => 0L
+        }
+        stageInfo.inputBytes = data.inputBytes
+        stageInfo.memoryBytesSpilled = data.memoryBytesSpilled
+        stageInfo.numActiveTasks = data.numActiveTasks
+        stageInfo.numCompleteTasks = data.numCompleteTasks
+        stageInfo.numFailedTasks = data.numFailedTasks
+        stageInfo.outputBytes = data.outputBytes
+        stageInfo.shuffleReadBytes = data.shuffleReadTotalBytes
+        stageInfo.shuffleWriteBytes = data.shuffleWriteBytes
+        addIntSetToJSet(data.completedIndices, stageInfo.completedIndices)
 
-          _jobProgressData.addStageInfo(id._1, id._2, stageInfo)
+        _jobProgressData.addStageInfo(id._1, id._2, stageInfo)
       }
 
       // Add completed jobs

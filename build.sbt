@@ -14,12 +14,15 @@
 // the License.
 //
 
-import play.Project._
 import Dependencies._
+import play.sbt.PlayJava
+//import play.sbt.PlayEbean
 
 name := "dr-elephant"
 
 version := "2.1.7"
+
+lazy val root = (project in file(".")).enablePlugins(PlayJava).enablePlugins(PlayEbean)
 
 organization := "com.linkedin.drelephant"
 
@@ -33,8 +36,8 @@ ivyConfigurations += config("compileonly").hide
 // Append all dependencies with 'compileonly' configuration to unmanagedClasspath in Compile.
 unmanagedClasspath in Compile ++= update.value.select(configurationFilter("compileonly"))
 
-playJavaSettings
+//playJavaSettings
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.8"
 
 envVars in Test := Map("PSO_DIR_PATH" -> (baseDirectory.value / "scripts/pso").getAbsolutePath)

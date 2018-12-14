@@ -14,7 +14,6 @@
 // the License.
 //
 
-import play.Project._
 import sbt._
 
 object Dependencies {
@@ -30,6 +29,7 @@ object Dependencies {
   lazy val jsoupVersion = "1.7.3"
   lazy val mysqlConnectorVersion = "5.1.36"
   lazy val oozieClientVersion = "4.2.0"
+  lazy val scalaV = "2.11"
 
   lazy val HADOOP_VERSION = "hadoopversion"
   lazy val SPARK_VERSION = "sparkversion"
@@ -39,25 +39,31 @@ object Dependencies {
     hadoopVersion = System.getProperties.getProperty(HADOOP_VERSION)
   }
 
-  var sparkVersion = "1.4.0"
+  var sparkVersion = "2.1.1"
   if (System.getProperties.getProperty(SPARK_VERSION) != null) {
     sparkVersion = System.getProperties.getProperty(SPARK_VERSION)
   }
 
-  val sparkExclusion = if (sparkVersion >= "1.5.0") {
-    "org.apache.spark" % "spark-core_2.10" % sparkVersion excludeAll(
-      ExclusionRule(organization = "com.typesafe.akka"),
-      ExclusionRule(organization = "org.apache.avro"),
-      ExclusionRule(organization = "org.apache.hadoop"),
-      ExclusionRule(organization = "net.razorvine")
-      )
-  } else {
-    "org.apache.spark" % "spark-core_2.10" % sparkVersion excludeAll(
-      ExclusionRule(organization = "org.apache.avro"),
-      ExclusionRule(organization = "org.apache.hadoop"),
-      ExclusionRule(organization = "net.razorvine")
-      )
-  }
+  val sparkDependency = Seq(
+    if (sparkVersion >= "1.5.0") {
+      "org.apache.spark" % s"spark-core_$scalaV" % sparkVersion excludeAll(
+        ExclusionRule(organization = "com.typesafe.akka"),
+        ExclusionRule(organization = "org.apache.avro"),
+        ExclusionRule(organization = "org.apache.hadoop"),
+        ExclusionRule(organization = "org.glassfish.hk2", name = "hk2-locator"),
+        ExclusionRule(organization = "net.razorvine")
+        )
+    } else {
+      "org.apache.spark" % s"spark-core_$scalaV" % sparkVersion excludeAll(
+        ExclusionRule(organization = "org.apache.avro"),
+        ExclusionRule(organization = "org.apache.hadoop"),
+        ExclusionRule(organization = "net.razorvine")
+        )
+    },
+    "org.apache.spark" % s"spark-streaming_$scalaV" % sparkVersion,
+    "org.apache.spark" % s"spark-sql_$scalaV" % sparkVersion,
+    "org.apache.spark" % s"spark-streaming-kafka-0-8_$scalaV" % sparkVersion
+  )
 
   // Dependency coordinates
   var requiredDep = Seq(
@@ -84,8 +90,8 @@ object Dependencies {
     "org.glassfish.jersey.media" % "jersey-media-json-jackson" % jerseyVersion % Test,
     "org.glassfish.jersey.test-framework" % "jersey-test-framework-core" % jerseyVersion % Test,
     "org.glassfish.jersey.test-framework.providers" % "jersey-test-framework-provider-grizzly2" % jerseyVersion % Test,
-    "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
-    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.4",
+    //    "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
     "io.dropwizard.metrics" % "metrics-core" % "3.1.2",
     "io.dropwizard.metrics" % "metrics-healthchecks" % "3.1.2",
     "org.mockito" % "mockito-core" % "1.10.19" exclude ("org.hamcrest", "hamcrest-core"),
@@ -93,11 +99,22 @@ object Dependencies {
     "org.apache.httpcomponents" % "httpclient" % "4.5.2",
     "org.apache.httpcomponents" % "httpcore" % "4.4.4",
     "org.scalatest" %% "scalatest" % "3.0.0" % Test,
-    "com.h2database" % "h2" % "1.4.196" % Test
+    "com.h2database" % "h2" % "1.4.196" % Test,
+    "commons-dbutils" % "commons-dbutils" % "1.6",
+    "com.mchange" % "c3p0" % "0.9.5",
+    "com.alibaba" % "fastjson" % "1.2.31",
+    "com.amazonaws" % "emrfs-hadoop" % "2.18.0",
+    "javax.validation" % "validation-api" % "1.1.0.Final"
+  ) ++ sparkDependency
 
-  ) :+ sparkExclusion
+  //  var dependencies = Seq(javaJdbc, javaEbean, cache)
 
-  var dependencies = Seq(javaJdbc, javaEbean, cache)
+  var dependencies = Seq(
+//    "com.typesafe.play" % "play-java-ebean_2.11" % "2.3.9",
+    "com.typesafe.play" % "play-java-jdbc_2.11" % "2.4.6",
+    "com.typesafe.play" % "play-cache_2.11" % "2.4.6"
+  )
+
   dependencies ++= requiredDep
 
   val exclusionRules = Seq(

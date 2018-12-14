@@ -39,12 +39,12 @@ public class Global extends GlobalSettings {
 
     fixJavaKerberos();
 
-    try {
-      _drElephant = new DrElephant();
-      _drElephant.start();
-    } catch (IOException e) {
-      Logger.error("Application start failed...", e);
-    }
+//    try {
+//      _drElephant = new DrElephant();
+//      _drElephant.start();
+//    } catch (IOException e) {
+//      Logger.error("Application start failed...", e);
+//    }
   }
 
   public void onStop(Application app) {

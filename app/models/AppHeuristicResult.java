@@ -83,4 +83,6 @@ public class AppHeuristicResult extends Model {
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "yarnAppHeuristicResult")
   public List<AppHeuristicResultDetails> yarnAppHeuristicResultDetails;
 
+  public static Finder<String, AppHeuristicResult> find = new Finder<String, AppHeuristicResult>(String.class, AppHeuristicResult.class);
+
 }

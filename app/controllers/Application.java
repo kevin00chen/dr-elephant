@@ -243,12 +243,20 @@ public class Application extends Controller {
 
     // Search and display job details when job id or flow execution url is provided.
     if (!appId.isEmpty()) {
-      AppResult result = AppResult.find.select("*")
-          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*")
-          .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS + "." + AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS,
-              "*")
-          .where()
-          .idEq(appId).findUnique();
+      AppResult result = AppResult.find.select("*").fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, "*").where().idEq(appId).findUnique();
+
+      List<Integer> ids = new ArrayList<Integer>();
+      for (AppHeuristicResult x : result.yarnAppHeuristicResults) {
+        ids.add(x.id);
+      }
+
+      List<AppHeuristicResult> r2 = AppHeuristicResult.find.select("*").fetch(AppHeuristicResult.TABLE.APP_HEURISTIC_RESULT_DETAILS, "*")
+              .where().idIn(ids).findList();
+
+      result.yarnAppHeuristicResults = r2;
+
+
+
       return ok(searchPage.render(null, jobDetails.render(result)));
     } else if (Utils.isSet(partialFlowExecId)) {
       IdUrlPair flowExecPair = bestSchedulerInfoMatchGivenPartialId(partialFlowExecId, AppResult.TABLE.FLOW_EXEC_ID);

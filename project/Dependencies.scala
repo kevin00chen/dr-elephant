@@ -103,7 +103,6 @@ object Dependencies {
     "commons-dbutils" % "commons-dbutils" % "1.6",
     "com.mchange" % "c3p0" % "0.9.5",
     "com.alibaba" % "fastjson" % "1.2.31",
-    "com.amazonaws" % "emrfs-hadoop" % "2.18.0",
     "javax.validation" % "validation-api" % "1.1.0.Final"
   ) ++ sparkDependency
 

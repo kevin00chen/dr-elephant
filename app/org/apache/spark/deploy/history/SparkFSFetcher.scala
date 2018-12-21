@@ -71,14 +71,18 @@ class SparkFSFetcher(fetcherConfData: FetcherConfigurationData) extends Elephant
 
   def fetchData(analyticJob: AnalyticJob): SparkApplicationData = {
     val appId = analyticJob.getAppId()
-    doAsPrivilegedAction { () => doFetchData(appId) }
+//    doAsPrivilegedAction { () => doFetchData(appId) }
+    doFetchData(appId)
   }
 
   protected def doAsPrivilegedAction[T](action: () => T): T =
     security.doAs[T](new PrivilegedAction[T] { override def run(): T = action() })
 
-  protected def doFetchData(appId: String): SparkDataCollection = {
+  def doFetchData(appId: String): SparkDataCollection = {
     val dataCollection = new SparkDataCollection()
+    hadoopConfiguration.addResource("/Users/chenkaiming/Documents/xiaohongshu/env/hive-etl-conf/hadoop_conf/core-site.xml")
+    hadoopConfiguration.addResource("/Users/chenkaiming/Documents/xiaohongshu/env/hive-etl-conf/hadoop_conf/hdfs-site.xml")
+    hadoopConfiguration.set("fs.default.name", "hdfs://ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8020")
 
     val (eventLogFileSystem, baseEventLogPath) =
       sparkUtils.fileSystemAndPathForEventLogDir(hadoopConfiguration, sparkConf, eventLogUri)

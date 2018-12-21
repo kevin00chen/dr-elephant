@@ -174,19 +174,19 @@ class SparkUtilsTest extends FunSpec with org.scalatest.Matchers with OptionValu
         val sparkConf =
           new SparkConf()
             .set("spark.eventLog.dir", "/logs/spark")
-            .set("spark.eventLog.compress", "true")
+            .set("spark.eventLog.compress", "false")
 
         val sparkUtils = SparkUtilsTest.newFakeSparkUtilsForEventLog(
           new URI("webhdfs://nn1.grid.example.com:50070"),
           new Path("/logs/spark"),
-          new Path("application_1_1.lz4"),
+          new Path("application_1541874278886_21981_1"),
           Array.empty[Byte]
         )
 
         val (fs, basePath) = sparkUtils.fileSystemAndPathForEventLogDir(hadoopConfiguration, sparkConf, None)
 
         val (path, codec) =
-          sparkUtils.pathAndCodecforEventLog(sparkConf: SparkConf, fs: FileSystem, basePath: Path, "application_1", Some("1"))
+          sparkUtils.pathAndCodecforEventLog(sparkConf: SparkConf, fs: FileSystem, basePath: Path, "application_1541874278886_21981", Some("1"))
 
         path should be(new Path("webhdfs://nn1.grid.example.com:50070/logs/spark/application_1_1.lz4"))
         codec.value should be(a[LZ4CompressionCodec])
@@ -202,14 +202,14 @@ class SparkUtilsTest extends FunSpec with org.scalatest.Matchers with OptionValu
         val sparkUtils = SparkUtilsTest.newFakeSparkUtilsForEventLog(
           new URI("webhdfs://nn1.grid.example.com:50070"),
           new Path("/logs/spark"),
-          new Path("application_1_1.lz4"),
+          new Path("application_1541874278886_21981_1"),
           Array.empty[Byte]
         )
 
         val (fs, basePath) = sparkUtils.fileSystemAndPathForEventLogDir(hadoopConfiguration, sparkConf, None)
 
         val (path, codec) =
-          sparkUtils.pathAndCodecforEventLog(sparkConf: SparkConf, fs: FileSystem, basePath: Path, "application_1", None)
+          sparkUtils.pathAndCodecforEventLog(sparkConf: SparkConf, fs: FileSystem, basePath: Path, "application_1541874278886_21981", None)
 
         path should be(new Path("webhdfs://nn1.grid.example.com:50070/logs/spark/application_1_1.lz4"))
         codec.value should be(a[LZ4CompressionCodec])

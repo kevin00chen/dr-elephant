@@ -67,7 +67,7 @@ trait SparkUtils {
         case Some(uri) if uri.getScheme == "webhdfs" =>
           (FileSystem.get(uri, hadoopConfiguration), new Path(uri.getPath))
         case Some(uri) if uri.getScheme == "hdfs" =>
-          (FileSystem.get(new URI(s"webhdfs://${uri.getHost}:${DFS_HTTP_PORT}${uri.getPath}"), hadoopConfiguration), new Path(uri.getPath))
+          (FileSystem.get(new URI(s"hdfs://${uri.getHost}:${DFS_HTTP_PORT}${uri.getPath}"), hadoopConfiguration), new Path(uri.getPath))
         case Some(uri) =>
           val nameNodeAddress
           = hadoopUtils.findHaNameNodeAddress(hadoopConfiguration)
@@ -119,8 +119,11 @@ trait SparkUtils {
       }
       case None => {
         val (logPath, codecName) = getLogPathAndCodecName(fs, fs.getUri.resolve(basePath.toUri), appId)
-
-        (logPath, Some(compressionCodecMap.getOrElseUpdate(codecName, loadCompressionCodec(sparkConf, codecName))))
+        val codec = codecName match {
+          case "None" ⇒ None
+          case _ ⇒ Some(compressionCodecMap.getOrElseUpdate(codecName, loadCompressionCodec(sparkConf, codecName)))
+        }
+        (logPath, codec)
       }
     }
 
@@ -137,7 +140,12 @@ trait SparkUtils {
     */
   def withEventLog[T](fs: FileSystem, path: Path, codec: Option[CompressionCodec])(f: InputStream => T): T = {
     resource.managed { openEventLog(path, fs) }
-      .map { in => codec.map { _.compressedInputStream(in) }.getOrElse(in) }
+      .map { in =>
+        codec match {
+          case None ⇒ in
+          case _ ⇒ codec.map { _.compressedInputStream(in) }.getOrElse(in)
+        }
+      }
       .acquireAndGet(f)
   }
 
@@ -174,8 +182,13 @@ trait SparkUtils {
     // Compression codec is encoded as an extension, e.g. app_123.lzf
     // Since we sanitize the app ID to not include periods, it is safe to split on it
     val logBaseName = logName.stripSuffix(IN_PROGRESS)
-    logBaseName.split("\\.").tail.lastOption.map { codecName =>
-      compressionCodecMap.getOrElseUpdate(codecName, loadCompressionCodec(conf, codecName))
+    val logBaseNames = logBaseName.split("\\.")
+    if (logBaseNames.length > 1) {
+      logBaseNames.tail.lastOption.map { codecName =>
+        compressionCodecMap.getOrElseUpdate(codecName, loadCompressionCodec(conf, codecName))
+      }
+    } else {
+      None
     }
   }
 
@@ -227,15 +240,17 @@ trait SparkUtils {
     val nameAndExtension = logPath.split('.')
     if( nameAndExtension.length == 2 ) {
       extension = Some(nameAndExtension(1))
-      val name = nameAndExtension(0)
-      val appIdAndAttempt = name.split('_')
-      if( appIdAndAttempt.length == 4 ) {
-        attempt = Some(appIdAndAttempt(3))
-        appId = Some(appIdAndAttempt.dropRight(1).mkString("_"))
-      } else {
-        appId = Some(name)
-      }
     }
+
+    val name = nameAndExtension(0)
+    val appIdAndAttempt = name.split('_')
+    if( appIdAndAttempt.length == 4 ) {
+      attempt = Some(appIdAndAttempt(3))
+      appId = Some(appIdAndAttempt.dropRight(1).mkString("_"))
+    } else {
+      appId = Some(name)
+    }
+
     (appId, attempt, extension)
   }
   private def getLogPathAndCodecName(
@@ -272,7 +287,7 @@ trait SparkUtils {
                                                                 "_" + sanitize(finalAttempt._2.get) +
                                                                 "." + finalAttempt._3.get), finalAttempt._3.get)
       // if codec is not available, but we found a file match with appId, use the actual file Path from the first match
-      case nocodec if nocodec._1 != None & nocodec._3 == None => (attemptsList(0).getPath(), DEFAULT_COMPRESSION_CODEC)
+      case nocodec if nocodec._1 != None & nocodec._3 == None => (attemptsList(0).getPath(), "None")
 
       // This should be reached only if we can't parse the filename in the path.
       // Try to construct a general path in that case.

@@ -17,29 +17,22 @@
 package com.linkedin.drelephant;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import com.linkedin.drelephant.analysis.AnalyticJob;
-import com.linkedin.drelephant.analysis.AnalyticJobGenerator;
-import com.linkedin.drelephant.analysis.HDFSContext;
-import com.linkedin.drelephant.analysis.HadoopSystemContext;
-import com.linkedin.drelephant.analysis.AnalyticJobGeneratorHadoop2;
-
+import com.linkedin.drelephant.analysis.*;
 import com.linkedin.drelephant.security.HadoopSecurity;
-
+import com.linkedin.drelephant.util.Utils;
+import com.red.bigdata.db.DatabaseAccess;
+import com.red.bigdata.service.DBService;
 import controllers.MetricsController;
+import models.AppResult;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Logger;
+
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.linkedin.drelephant.util.Utils;
-import models.AppResult;
-
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.log4j.Logger;
 
 
 /**
@@ -169,11 +162,31 @@ public class ElephantRunner implements Runnable {
     @Override
     public void run() {
       try {
+        DatabaseAccess dao = DatabaseAccess.getInstance();
+        DBService dbService = new DBService(dao);
+
         String analysisName = String.format("%s %s", _analyticJob.getAppType().getName(), _analyticJob.getAppId());
         long analysisStartTimeMillis = System.currentTimeMillis();
         logger.info(String.format("Analyzing %s", analysisName));
         AppResult result = _analyticJob.getAnalysis();
-        result.save();
+
+        dbService.saveYarnAppResult(result);
+//        result.save();
+//
+//        result.jobName = "";
+//        result.jobDefId = "";
+//        result.flowDefId = "";
+//        logger.info("===========" + result.toString());
+//        logger.info("xxxxxxxxxxxx " + result.yarnAppHeuristicResults.size());
+//        Model.db().save(result.yarnAppHeuristicResults);
+//
+//        int x = 0;
+//        for (AppHeuristicResult appHeuristicResult : result.yarnAppHeuristicResults) {
+//          Model.db().save(appHeuristicResult.yarnAppHeuristicResultDetails);
+//          x += appHeuristicResult.yarnAppHeuristicResultDetails.size();
+//        }
+//        logger.info("yyyyyyyyyy " + x);
+
         long processingTime = System.currentTimeMillis() - analysisStartTimeMillis;
         logger.info(String.format("Analysis of %s took %sms", analysisName, processingTime));
         MetricsController.setJobProcessingTime(processingTime);

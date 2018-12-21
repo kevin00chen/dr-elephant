@@ -67,7 +67,8 @@ trait SparkUtils {
         case Some(uri) if uri.getScheme == "webhdfs" =>
           (FileSystem.get(uri, hadoopConfiguration), new Path(uri.getPath))
         case Some(uri) if uri.getScheme == "hdfs" =>
-          (FileSystem.get(new URI(s"hdfs://${uri.getHost}:${DFS_HTTP_PORT}${uri.getPath}"), hadoopConfiguration), new Path(uri.getPath))
+          logger.info(s"============uri: ${uri.getPath}, conf: ${hadoopConfiguration.get("dfs.namenode.rpc-address")} =======")
+          (FileSystem.get(new URI(s"hdfs://${hadoopConfiguration.get("dfs.namenode.rpc-address")}${uri.getPath}"), hadoopConfiguration), new Path(uri.getPath))
         case Some(uri) =>
           val nameNodeAddress
           = hadoopUtils.findHaNameNodeAddress(hadoopConfiguration)

@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS tuning_algorithm (
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ,
   PRIMARY KEY (id),
   UNIQUE KEY tuning_algorithm_u1 (optimization_algo, optimization_algo_version)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO tuning_algorithm(id, job_type, optimization_algo, optimization_algo_version, optimization_metric, created_ts, updated_ts)
 VALUES (1, 'PIG', 'PSO', '1', 'RESOURCE', current_timestamp(0), current_timestamp(0));
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS tuning_parameter (
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT tuning_parameter_ibfk_1 FOREIGN KEY (tuning_algorithm_id) REFERENCES tuning_algorithm (id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO tuning_parameter (id, param_name, tuning_algorithm_id, default_value, min_value, max_value, step_size, is_derived, created_ts, updated_ts) VALUES
 (1,'mapreduce.task.io.sort.mb',1,100,50,1920,50, 0, current_timestamp(0), current_timestamp(0)),
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS flow_definition (
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY flow_definition_u1 (flow_def_id)
-) ENGINE=InnoDB AUTO_INCREMENT=10000;
+) ENGINE=InnoDB AUTO_INCREMENT=10000 DEFAULT CHARSET=utf8;
 
 /**
  * This table represent the job to be optimized. This table contains general info other than auto tuning related
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS job_definition (
   PRIMARY KEY (id),
   UNIQUE KEY job_definition_u1 (job_def_id) ,
   CONSTRAINT job_definition_ibfk_1 FOREIGN KEY (flow_definition_id) REFERENCES flow_definition (id)
-) ENGINE=InnoDB AUTO_INCREMENT=100000;
+) ENGINE=InnoDB AUTO_INCREMENT=100000 DEFAULT CHARSET=utf8;
 
 create index index_jd_flow_definition_id on job_definition (flow_definition_id);
 
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS tuning_job_definition (
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT tuning_job_definition_ibfk_1 FOREIGN KEY (job_definition_id) REFERENCES job_definition (id),
   CONSTRAINT tuning_job_definition_ibfk_2 FOREIGN KEY (tuning_algorithm_id) REFERENCES tuning_algorithm (id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 create index index_tjd_job_definition_id on tuning_job_definition (job_definition_id);
 create index index_tjd_tuning_algorithm_id on tuning_job_definition (tuning_algorithm_id);
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS flow_execution (
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   CONSTRAINT flow_execution_ibfk_1 FOREIGN KEY (flow_definition_id) REFERENCES flow_definition (id)
-) ENGINE=InnoDB AUTO_INCREMENT=1000;
+) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8;
 
 create index index_fe_flow_definition_id on flow_execution (flow_definition_id);
 
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS job_execution (
   PRIMARY KEY (id),
   CONSTRAINT job_execution_ibfk_1 FOREIGN KEY (job_definition_id) REFERENCES job_definition (id),
   CONSTRAINT job_execution_ibfk_2 FOREIGN KEY (flow_execution_id) REFERENCES flow_execution (id)
-) ENGINE=InnoDB AUTO_INCREMENT=1000;
+) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8;
 
 create index index_je_job_exec_id on job_execution (job_exec_id);
 create index index_je_job_exec_url on job_execution (job_exec_url);
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS job_suggested_param_set (
   -- This is happening because unlike mysql, h2 database doesn't support nullable foreign keys.
   -- CONSTRAINT job_suggested_param_set_f2 FOREIGN KEY (fitness_job_execution_id) REFERENCES job_execution (id),
   CONSTRAINT job_suggested_param_set_f3 FOREIGN KEY (job_definition_id) REFERENCES job_definition (id)
-) ENGINE=InnoDB AUTO_INCREMENT=1000;
+) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8;
 
 create index index_tje_job_definition_id on job_suggested_param_set (job_definition_id);
 create index index_tje_tuning_algorithm_id on job_suggested_param_set (tuning_algorithm_id);
@@ -205,7 +205,7 @@ CREATE TABLE IF NOT EXISTS job_saved_state (
   updated_ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (job_definition_id),
   CONSTRAINT job_saved_state_f1 FOREIGN KEY (job_definition_id) REFERENCES job_definition (id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 /**
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS job_suggested_param_value (
   UNIQUE KEY job_suggested_param_value_u1 (job_suggested_param_set_id, tuning_parameter_id),
   CONSTRAINT job_suggested_param_value_f1 FOREIGN KEY (job_suggested_param_set_id) REFERENCES job_suggested_param_set (id),
   CONSTRAINT job_suggested_param_value_f2 FOREIGN KEY (tuning_parameter_id) REFERENCES tuning_parameter (id)
-) ENGINE=InnoDB AUTO_INCREMENT=1000;
+) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8;
 
 create index index_jspv_tuning_parameter_id on job_suggested_param_value (tuning_parameter_id);
 
@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS tuning_job_execution_param_set (
   UNIQUE KEY tuning_job_execution_param_set_u1 (job_suggested_param_set_id, job_execution_id),
   CONSTRAINT tuning_job_execution_param_set_f1 FOREIGN KEY (job_suggested_param_set_id) REFERENCES job_suggested_param_set (id),
   CONSTRAINT tuning_job_execution_param_set_f2 FOREIGN KEY (job_execution_id) REFERENCES job_execution (id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 # --- !Downs
 drop table tuning_job_execution_param_set;

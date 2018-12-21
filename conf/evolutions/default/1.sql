@@ -59,8 +59,8 @@ CREATE TABLE yarn_app_heuristic_result (
   severity            TINYINT(2)    UNSIGNED NOT NULL       COMMENT 'The heuristic severity ranging from 0(LOW) to 4(CRITICAL)',
   score               MEDIUMINT(9)  UNSIGNED DEFAULT 0      COMMENT 'The heuristic score for the application. score = severity * number_of_tasks(map/reduce) where severity not in [0,1], otherwise score = 0',
 
-  PRIMARY KEY (id),
-  CONSTRAINT yarn_app_heuristic_result_f1 FOREIGN KEY (yarn_app_result_id) REFERENCES yarn_app_result (id)
+  PRIMARY KEY (id)
+--  ,CONSTRAINT yarn_app_heuristic_result_f1 FOREIGN KEY (yarn_app_result_id) REFERENCES yarn_app_result (id)
 );
 
 create index yarn_app_heuristic_result_i1 on yarn_app_heuristic_result (yarn_app_result_id);
@@ -72,8 +72,8 @@ CREATE TABLE yarn_app_heuristic_result_details (
   value                         VARCHAR(255) NOT NULL DEFAULT ''  COMMENT 'The analysis detail value corresponding to the name',
   details                       TEXT                              COMMENT 'More information on analysis details. e.g, stacktrace',
 
-  PRIMARY KEY (yarn_app_heuristic_result_id,name),
-  CONSTRAINT yarn_app_heuristic_result_details_f1 FOREIGN KEY (yarn_app_heuristic_result_id) REFERENCES yarn_app_heuristic_result (id)
+  PRIMARY KEY (yarn_app_heuristic_result_id,name)
+--  ,CONSTRAINT yarn_app_heuristic_result_details_f1 FOREIGN KEY (yarn_app_heuristic_result_id) REFERENCES yarn_app_heuristic_result (id)
 );
 
 create index yarn_app_heuristic_result_details_i1 on yarn_app_heuristic_result_details (name);

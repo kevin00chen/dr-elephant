@@ -46,7 +46,7 @@ public class DatabaseAccess implements Serializable {
             new Object[]{appId,
                     yarnAppHeuristicResult.heuristicClass,
                     yarnAppHeuristicResult.heuristicName,
-                    yarnAppHeuristicResult.severity,
+                    yarnAppHeuristicResult.severity.getValue(),
                     yarnAppHeuristicResult.score
             });
   }

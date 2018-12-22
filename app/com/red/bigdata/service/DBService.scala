@@ -7,7 +7,7 @@ package com.red.bigdata.service
 import com.red.bigdata.db.DatabaseAccess
 import models.{AppHeuristicResult, AppHeuristicResultDetails, AppResult}
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.slf4j.LoggerFactory
+import org.apache.log4j.Logger
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -15,7 +15,8 @@ import scala.collection.mutable.ArrayBuffer
   * Created by chenkaiming on 2017/6/29.
   */
 class DBService(dao: DatabaseAccess) {
-  val logger = LoggerFactory.getLogger(this.getClass)
+//  private static final Logger logger = Logger.getLogger(ElephantRunner.class);
+  val logger = Logger.getLogger(this.getClass)
 
   /**
     * 任务经启发式算法分析后入库

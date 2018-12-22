@@ -38,7 +38,7 @@ public class DatabaseAccess implements Serializable {
 
   public Long upsetYarnAppHeuristicResult(AppHeuristicResult yarnAppHeuristicResult, String appId) throws SQLException {
     String sql = "replace into yarn_app_heuristic_result(yarn_app_result_id, heuristic_class, heuristic_name, severity, score) " +
-            "values (?,?,?,?,?,?)";
+            "values (?,?,?,?,?)";
     logger.info("Replace Into yarn_app_heuristic_result ===>\n" + sql);
     return queryRunner.insert(
             sql,

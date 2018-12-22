@@ -31,7 +31,7 @@ public class DatabaseAccess implements Serializable {
   public int[] upsertYarnAppHeuristicResultDetails(Object[][] objects) throws SQLException {
     String sql = "replace into yarn_app_heuristic_result_details(yarn_app_heuristic_result_id, name, value, details) " +
             "values (?,?,?,?)";
-    logger.info("Replace Into yarn_app_heuristic_result_details ===>\n" + sql);
+    logger.debug("Replace Into yarn_app_heuristic_result_details ===>\n" + sql);
     return queryRunner.batch(sql,
             objects);
   }
@@ -39,7 +39,7 @@ public class DatabaseAccess implements Serializable {
   public Long upsetYarnAppHeuristicResult(AppHeuristicResult yarnAppHeuristicResult, String appId) throws SQLException {
     String sql = "replace into yarn_app_heuristic_result(yarn_app_result_id, heuristic_class, heuristic_name, severity, score) " +
             "values (?,?,?,?,?)";
-    logger.info("Replace Into yarn_app_heuristic_result ===>\n" + sql);
+    logger.debug("Replace Into yarn_app_heuristic_result ===>\n" + sql);
     return queryRunner.insert(
             sql,
             new ScalarHandler<Long>("GENERATED_KEY"),
@@ -57,7 +57,7 @@ public class DatabaseAccess implements Serializable {
             "(id, name, username, queue_name, start_time, finish_time, tracking_url, job_type, severity, score, workflow_depth, scheduler, job_name, job_exec_id, flow_exec_id, job_def_id, flow_def_id, job_exec_url, flow_exec_url, job_def_url, flow_def_url, resource_used, resource_wasted, total_delay) " +
             "values " +
             "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    logger.info("Replace Into yarn_app_result ===>\n" + sql);
+    logger.debug("Replace Into yarn_app_result ===>\n" + sql);
     return queryRunner.insert(
             sql,
             new ScalarHandler<Long>("GENERATED_KEY"),

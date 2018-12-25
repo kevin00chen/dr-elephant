@@ -8,6 +8,7 @@ import java.sql.Timestamp
 
 import com.linkedin.drelephant.analysis.AnalyticJob
 import com.linkedin.drelephant.mapreduce.data.MapReduceApplicationData
+import com.linkedin.drelephant.spark.data.SparkApplicationData
 import com.linkedin.drelephant.tez.data.TezApplicationData
 import com.red.bigdata.db.DatabaseAccess
 import com.red.bigdata.util.MonitorConstants
@@ -84,8 +85,11 @@ class DBService(dao: DatabaseAccess) {
     */
   def saveDataDetail(analyticJob: AnalyticJob)  = {
     val dataDetail = analyticJob.getDataDetail
+    logger.info(s"xxxxxxxxxxxxxxxxxxxxx: saveDataDetail ${analyticJob.getAppId}")
+    logger.info(s"${analyticJob.getAppType.getName}, ${dataDetail.getClass}")
     // Spark任务
     if (dataDetail.isInstanceOf[SparkDataCollection]) {
+      logger.info(s"==========Save Spark Job Detail Data app_id: ${analyticJob.getAppId}")
       val sparkDataCollection = dataDetail.asInstanceOf[SparkDataCollection]
       val sparkModels = new ListBuffer[BaseModel]
 

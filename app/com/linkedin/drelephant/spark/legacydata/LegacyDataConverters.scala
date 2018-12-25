@@ -16,9 +16,16 @@
 
 package com.linkedin.drelephant.spark.legacydata
 
+import java.sql.Timestamp
 import java.util.Date
 
+import com.linkedin.drelephant.analysis.AnalyticJob
+import models._
+import org.apache.commons.lang.StringEscapeUtils
+import org.apache.spark.deploy.history.SparkDataCollection
+
 import scala.collection.JavaConverters
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 import com.linkedin.drelephant.spark.fetchers.statusapiv1._
@@ -34,6 +41,18 @@ import com.linkedin.drelephant.spark.fetchers.statusapiv1.StageStatus
 object LegacyDataConverters {
   import JavaConverters._
 
+  def convert(analyticJob: AnalyticJob, legacyData: SparkApplicationData): com.linkedin.drelephant.spark.data.SparkApplicationData = {
+    com.linkedin.drelephant.spark.data.SparkApplicationData(
+      legacyData.getAppId,
+      extractAppConfigurationProperties(legacyData),
+      extractApplicationInfo(legacyData),
+      extractJobDatas(legacyData),
+      extractStageDatas(legacyData),
+      extractExecutorSummaries(legacyData),
+      extractBaseModels(analyticJob, legacyData)
+    )
+  }
+
   def convert(legacyData: SparkApplicationData): com.linkedin.drelephant.spark.data.SparkApplicationData = {
     com.linkedin.drelephant.spark.data.SparkApplicationData(
       legacyData.getAppId,
@@ -41,7 +60,8 @@ object LegacyDataConverters {
       extractApplicationInfo(legacyData),
       extractJobDatas(legacyData),
       extractStageDatas(legacyData),
-      extractExecutorSummaries(legacyData)
+      extractExecutorSummaries(legacyData),
+      List.empty
     )
   }
 
@@ -183,5 +203,216 @@ object LegacyDataConverters {
       Try(executorIds.sortBy { _.toInt }).getOrElse(executorIds.sorted)
     }
     sortedExecutorIds.map { executorId => extractExecutorSummary(executorId) }
+  }
+
+  def extractBaseModels(analyticJob: AnalyticJob, sparkApplicationData: SparkApplicationData): List[BaseModel] = {
+    val sparkModels = new ListBuffer[BaseModel]
+
+    // environment明细
+    addSparkEnv(analyticJob, sparkApplicationData, sparkModels)
+    // spark app明细
+    addSparkApp(analyticJob, sparkApplicationData, sparkModels)
+    // executor明细
+    addSparkExecutors(analyticJob, sparkApplicationData, sparkModels)
+    // jobs明细
+    addSparkJobs(analyticJob, sparkApplicationData, sparkModels)
+    // stages明细
+    addSparkStages(analyticJob, sparkApplicationData, sparkModels)
+    // tasks明细
+    addSparkTasks(analyticJob, sparkApplicationData, sparkModels)
+    // storages明细
+    addSparkStorages(analyticJob, sparkApplicationData, sparkModels)
+    sparkModels.toList
+  }
+
+  private def addSparkStorages(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]): Unit = {
+    sparkDataCollection.getStorageData.getStorageStatusList.asScala.foreach { storage =>
+      val blkMngrId = storage.blockManagerId
+      listBuffer += SparkStorage(analyticJob.getAppId,
+        blkMngrId.executorId,
+        blkMngrId.host,
+        blkMngrId.port,
+        blkMngrId.toString(),
+        storage.maxMem,
+        storage.cacheSize,
+        storage.diskUsed,
+        storage.memUsed,
+        storage.memRemaining,
+        storage.numBlocks,
+        storage.numRddBlocks,
+        analyticJob.getClusterName)
+    }
+  }
+
+  private def addSparkStages(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]): Unit = {
+    val sparkJobStageData = sparkDataCollection.getJobProgressData
+    sparkJobStageData.getStageIdToInfo.values.asScala.foreach { stage =>
+      listBuffer += SparkStage(analyticJob.getAppId,
+        stage.jobId,
+        stage.stageId,
+        stage.attemptId,
+        stage.parentIds,
+        StringEscapeUtils.escapeJava(stage.name),
+        StringEscapeUtils.escapeJava(stage.description),
+        stage.accumulables,
+        stage.status,
+        stage.failureReason,
+        stage.numActiveTasks,
+        stage.numKilledTasks,
+        stage.numCompleteTasks,
+        stage.numFailedTasks,
+        stage.executorRunTime,
+        stage.executorCpuTime,
+        stage.duration,
+        stage.inputBytes,
+        stage.inputRecords,
+        stage.outputBytes,
+        stage.outputRecords,
+        stage.shuffleReadBytes,
+        stage.shuffleReadRecords,
+        stage.shuffleWriteBytes,
+        stage.shuffleWriteRecords,
+        stage.memoryBytesSpilled,
+        stage.diskBytesSpilled,
+        analyticJob.getClusterName)
+    }
+  }
+
+
+  private def addSparkTasks(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]): Unit = {
+    val sparkJobStageData = sparkDataCollection.getJobProgressData
+    sparkJobStageData.getTaskIdToInfo.values.asScala.foreach { task =>
+      listBuffer += SparkTask(analyticJob.getAppId,
+        task.jobId,
+        task.stageId,
+        task.executorId,
+        task.taskId,
+        task.attemptId,
+        new Timestamp(task.launchTime),
+        new Timestamp(task.finishTime),
+        task.duration,
+        task.gettingResultTime,
+        task.status,
+        task.accumulables,
+        task.host,
+        task.locality,
+        task.errorMessage,
+        task.executorDeserTime,
+        task.executorDeserCpuTime,
+        task.executorRunTime,
+        task.executorCpuTime,
+        task.resultSize,
+        task.jvmGCTime,
+        task.resultSerialTime,
+        task.memoryBytesSpilled,
+        task.diskBytesSpilled,
+        task.peakExecutionMemory,
+        task.inputBytesRead,
+        task.inputRecordRead,
+        task.outputBytesWritten,
+        task.outputRecordsWritten,
+        task.shuffleRemoteBlocksFetched,
+        task.shuffleLocalBlocksFetched,
+        task.shuffleRemoteBytesRead,
+        task.shuffleLocalBytesRead,
+        task.shuffleFetchWaitTime,
+        task.shuffleRecordsRead,
+        task.shuffleBytesWritten,
+        task.shuffleRecordsWritten,
+        task.shuffleWriteTime,
+        analyticJob.getClusterName)
+    }
+  }
+
+  private def addSparkJobs(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]): Unit = {
+    val sparkJobStageData = sparkDataCollection.getJobProgressData
+    sparkJobStageData.getJobIdToInfo.values.asScala.foreach { job =>
+      listBuffer += SparkJob(analyticJob.getAppId,
+        job.jobId,
+        job.jobGroup,
+        job.stageIds.asScala.mkString(","),
+        new Timestamp(job.startTime),
+        new Timestamp(job.endTime),
+        job.status,
+        job.error,
+        job.failedStageIds,
+        job.numTasks,
+        job.numActiveTasks,
+        job.numCompletedTasks,
+        job.numSkippedTasks,
+        job.numFailedTasks,
+        job.numKilledTasks,
+        job.getFailureRate,
+        job.numActiveStages,
+        job.numSkippedStages,
+        job.numFailedStages,
+        analyticJob.getClusterName)
+    }
+  }
+
+  private def addSparkExecutors(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]): Unit = {
+    val sparkExecutorData = sparkDataCollection.getExecutorData()
+    sparkExecutorData.getExecutors.asScala.foreach { executorId =>
+      val executorInfo = sparkExecutorData.getExecutorInfo(executorId)
+      listBuffer += SparkExecutor(analyticJob.getAppId,
+        executorInfo.execId,
+        executorInfo.hostPort,
+        executorInfo.rddBlocks,
+        executorInfo.memUsed,
+        executorInfo.maxMem,
+        executorInfo.diskUsed,
+        executorInfo.completedTasks,
+        executorInfo.failedTasks,
+        executorInfo.totalTasks,
+        executorInfo.duration,
+        executorInfo.inputBytes,
+        executorInfo.outputBytes,
+        executorInfo.shuffleRead,
+        executorInfo.shuffleWrite,
+        executorInfo.inputRecord,
+        executorInfo.outputRecord,
+        executorInfo.stdout,
+        executorInfo.stderr,
+        new Timestamp(executorInfo.startTime),
+        new Timestamp(executorInfo.finishTime),
+        executorInfo.finishReason,
+        analyticJob.getClusterName)
+    }
+  }
+
+  private def addSparkEnv(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]): Unit = {
+    val env = sparkDataCollection.getEnvironmentData()
+    listBuffer += SparkEnv(analyticJob.getAppId,
+      StringEscapeUtils.escapeJava(env.getJVMInformations.toString),
+      StringEscapeUtils.escapeJava(env.getSparkProperties.toString),
+      StringEscapeUtils.escapeJava(env.getSystemProperties.toString),
+      StringEscapeUtils.escapeJava(env.getClassPathEntries.toString),
+      analyticJob.getClusterName)
+  }
+
+  private def addSparkApp(analyticJob: AnalyticJob, sparkDataCollection: SparkApplicationData, listBuffer: ListBuffer[BaseModel]) = {
+    val generalData = sparkDataCollection.getGeneralData()
+    val viewAcls =
+      if (generalData.getViewAcls == null || generalData.getViewAcls.isEmpty) ""
+      else generalData.getViewAcls.asScala.mkString(",")
+    val adminAcls =
+      if (generalData.getAdminAcls == null || generalData.getAdminAcls.isEmpty) ""
+      else generalData.getAdminAcls.asScala.mkString(",")
+
+    listBuffer += SparkApp(analyticJob.getAppId,
+      generalData.getApplicationName,
+      generalData.getAttemptId,
+      analyticJob.getQueueName,
+      analyticJob.getTrackingUrl,
+      analyticJob.getUser,
+      generalData.getSparkUser,
+      analyticJob.getVcoreSeconds,
+      analyticJob.getMemorySeconds,
+      new Timestamp(generalData.getStartTime),
+      new Timestamp(generalData.getEndTime),
+      analyticJob.getFinalStatus,
+      viewAcls,
+      adminAcls,
+      analyticJob.getClusterName)
   }
 }

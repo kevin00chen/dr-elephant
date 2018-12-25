@@ -18,6 +18,9 @@ package com.linkedin.drelephant.spark.data
 
 import java.util.Properties
 
+import com.linkedin.drelephant.spark.legacydata.SparkApplicationData
+import models.BaseModel
+
 import scala.collection.JavaConverters
 
 import com.linkedin.drelephant.analysis.{ApplicationType, HadoopApplicationData}
@@ -30,7 +33,8 @@ case class SparkApplicationData(
   applicationInfo: ApplicationInfo,
   jobDatas: Seq[JobData],
   stageDatas: Seq[StageData],
-  executorSummaries: Seq[ExecutorSummary]
+  executorSummaries: Seq[ExecutorSummary],
+  sparkBaseModels: List[BaseModel]
 ) extends HadoopApplicationData {
   import SparkApplicationData._
   import JavaConverters._
@@ -65,6 +69,6 @@ object SparkApplicationData {
     val jobDatas = restDerivedData.jobDatas
     val stageDatas = restDerivedData.stageDatas
     val executorSummaries = restDerivedData.executorSummaries
-    apply(appId, appConfigurationProperties, applicationInfo, jobDatas, stageDatas, executorSummaries)
+    apply(appId, appConfigurationProperties, applicationInfo, jobDatas, stageDatas, executorSummaries, List.empty)
   }
 }

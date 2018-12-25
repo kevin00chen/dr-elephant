@@ -20,11 +20,12 @@ import com.linkedin.drelephant.analysis.{AnalyticJob, ElephantFetcher}
 import com.linkedin.drelephant.configurations.fetcher.FetcherConfigurationData
 import com.linkedin.drelephant.spark.data.SparkApplicationData
 import com.linkedin.drelephant.spark.legacydata.LegacyDataConverters
-import org.apache.spark.deploy.history.SparkFSFetcher
+import org.apache.spark.deploy.history.{SparkDataCollection, SparkFSFetcher}
 
 /**
  * Wraps the SparkFSFetcher which has the actual logic to comply to the new SparkApplicationData interface
- * @param fetcherConfigurationData
+  *
+  * @param fetcherConfigurationData
  */
 class FSFetcher(fetcherConfigurationData: FetcherConfigurationData)
   extends ElephantFetcher[SparkApplicationData] {
@@ -32,7 +33,7 @@ class FSFetcher(fetcherConfigurationData: FetcherConfigurationData)
 
   override def fetchData(analyticJob: AnalyticJob): SparkApplicationData = {
     val legacyData = legacyFetcher.fetchData(analyticJob)
-    LegacyDataConverters.convert(legacyData)
+    LegacyDataConverters.convert(analyticJob, legacyData)
   }
 }
 

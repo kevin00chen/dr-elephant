@@ -17,6 +17,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.log4j.Logger
 import org.apache.spark.deploy.history.SparkDataCollection
 import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 
@@ -24,7 +25,6 @@ import scala.collection.mutable.{ListBuffer, ArrayBuffer}
   * Created by chenkaiming on 2017/6/29.
   */
 class DBService(dao: DatabaseAccess) {
-//  private static final Logger logger = Logger.getLogger(ElephantRunner.class);
   val logger = Logger.getLogger(this.getClass)
 
   /**

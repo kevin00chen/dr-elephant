@@ -203,6 +203,7 @@ class SparkDataCollection extends SparkApplicationData {
         info.completedTasks = executorsListener.executorToTasksComplete.getOrElse(info.execId, 0)
         info.totalTasks = info.activeTasks + info.failedTasks + info.completedTasks
         info.duration = executorsListener.executorToDuration.getOrElse(info.execId, 0L)
+        info.totalGCTime = executorsListener.executorToGCDuration.getOrElse(info.execId, 0L)
         info.inputBytes = executorsListener.executorToInputBytes.getOrElse(info.execId, 0L)
         info.shuffleRead = executorsListener.executorToShuffleRead.getOrElse(info.execId, 0L)
         info.shuffleWrite = executorsListener.executorToShuffleWrite.getOrElse(info.execId, 0L)
@@ -525,6 +526,7 @@ class ExecutorsListener(storageStatusListener: StorageStatusListener) extends Sp
   val executorToTasksComplete = HashMap[String, Int]()
   val executorToTasksFailed = HashMap[String, Int]()
   val executorToDuration = HashMap[String, Long]()
+  val executorToGCDuration = HashMap[String, Long]()
   val executorToInputBytes = HashMap[String, Long]()
   val executorToInputRecords = HashMap[String, Long]()
   val executorToOutputBytes = HashMap[String, Long]()
@@ -587,6 +589,8 @@ class ExecutorsListener(storageStatusListener: StorageStatusListener) extends Sp
       // Update shuffle read/write
       val metrics = taskEnd.taskMetrics
       if (metrics != null) {
+        executorToGCDuration(eid) = executorToGCDuration.getOrElse(eid, 0L) + metrics.jvmGCTime
+
         executorToInputBytes(eid) =
           executorToInputBytes.getOrElse(eid, 0L) + metrics.inputMetrics.bytesRead
         executorToInputRecords(eid) =

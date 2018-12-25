@@ -245,11 +245,26 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         ApplicationType type =
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
 
+//        ApplicationType type = new ApplicationType(app.get("applicationType").getValueAsText());
+
+        String applicationTags = app.get("applicationTags").getValueAsText();
+        String state = app.get("state").getValueAsText();
+        String finalStatus = app.get("finalStatus").getValueAsText();
+        String clusterName = "Data-Hive-ETL";
+        String diagnostics = app.get("diagnostics").getValueAsText();
+
+        long runningContainers = app.get("runningContainers").getLongValue();
+        long memorySeconds = app.get("memorySeconds").getLongValue();
+        long vcoreSeconds = app.get("vcoreSeconds").getLongValue();
+        long elapsedTime = app.get("elapsedTime").getLongValue();
+
         // If the application type is supported
         if (type != null) {
           AnalyticJob analyticJob = new AnalyticJob();
           analyticJob.setAppId(appId).setAppType(type).setUser(user).setName(name).setQueueName(queueName)
-              .setTrackingUrl(trackingUrl).setStartTime(startTime).setFinishTime(finishTime);
+            .setTrackingUrl(trackingUrl).setStartTime(startTime).setFinishTime(finishTime).setDiagnostics(diagnostics)
+            .setApplicationTags(applicationTags).setState(state).setFinalStatus(finalStatus).setClusterName(clusterName)
+            .setRunningContainers(runningContainers).setMemorySeconds(memorySeconds).setVcoreSeconds(vcoreSeconds).setElapsedTime(elapsedTime);
 
           appList.add(analyticJob);
         }

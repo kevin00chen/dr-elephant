@@ -123,6 +123,10 @@ public class ElephantRunner implements Runnable {
             List<AnalyticJob> todos;
             try {
               todos = _analyticJobGenerator.fetchAnalyticJobs();
+              DatabaseAccess dao = DatabaseAccess.getInstance();
+              DBService dbService = new DBService(dao);
+              dbService.saveYarnAppOriginal(todos);
+              dao.close();
             } catch (Exception e) {
               logger.error("Error fetching job list. Try again later...", e);
               //Wait for a while before retry
@@ -191,7 +195,7 @@ public class ElephantRunner implements Runnable {
         logger.info(String.format("Analysis of %s took %sms", analysisName, processingTime));
         MetricsController.setJobProcessingTime(processingTime);
         MetricsController.markProcessedJobs();
-
+        dao.close();
       } catch (InterruptedException e) {
         logger.info("Thread interrupted");
         logger.info(e.getMessage());

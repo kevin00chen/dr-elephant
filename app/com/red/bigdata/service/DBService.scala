@@ -4,10 +4,12 @@ package com.red.bigdata.service
   * Created by chenkaiming on 2018/12/21.
   */
 
+import com.linkedin.drelephant.analysis.AnalyticJob
 import com.red.bigdata.db.DatabaseAccess
 import models.{AppHeuristicResult, AppHeuristicResultDetails, AppResult}
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.log4j.Logger
+import scala.collection.JavaConversions._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -28,7 +30,6 @@ class DBService(dao: DatabaseAccess) {
     * @param appResult
     */
   def saveYarnAppResult(appResult: AppResult) = {
-    import scala.collection.JavaConversions._
     try {
       // 保存 yarn_app_result
       dao.upsetYarnAppResult(appResult)
@@ -51,7 +52,21 @@ class DBService(dao: DatabaseAccess) {
         tasks.clear()
       }
     } catch {
-      case e: Exception => logger.error("Error thrown when saving MR AppResult : " + ExceptionUtils.getStackTrace(e))
+      case e: Exception => logger.error("Error thrown when saving AppResult : " + ExceptionUtils.getStackTrace(e))
+    }
+  }
+
+  /**
+    * 保存Yarn页面上的Application原始信息
+    *
+    * @param yarnAppOrigins
+    * @return
+    */
+  def saveYarnAppOriginal(yarnAppOrigins: java.util.List[AnalyticJob]) = {
+    try {
+      dao.upsertYarnAppOriginal(yarnAppOrigins)
+    } catch {
+      case e: Exception ⇒ logger.error("Error thrown when saving YarnAppOrginal ")
     }
   }
 }

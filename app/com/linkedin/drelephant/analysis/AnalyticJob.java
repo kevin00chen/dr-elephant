@@ -55,13 +55,23 @@ public class AnalyticJob {
   private int _retries = 0;
   private int _secondRetries = 0;
   private ApplicationType _type;
+  private String _applicationTags;
   private String _appId;
   private String _name;
   private String _queueName;
   private String _user;
+  private String _state;
+  private String _finalStatus;
+  private String _clusterName;
+  private String _diagnostics;
+
   private String _trackingUrl;
   private long _startTime;
   private long _finishTime;
+  private long _runningContainers;
+  private long _elapsedTime;
+  private long _memorySeconds;
+  private long _vcoreSeconds;
 
   /**
    * Returns the application type
@@ -83,6 +93,88 @@ public class AnalyticJob {
     _type = type;
     return this;
   }
+
+  public String getApplicationTags() {
+    return _applicationTags;
+  }
+
+  public AnalyticJob setApplicationTags(String _applicationTags) {
+    this._applicationTags = _applicationTags;
+    return this;
+  }
+
+  public String getDiagnostics() {
+    return _diagnostics;
+  }
+
+  public AnalyticJob setDiagnostics(String _diagnostics) {
+    this._diagnostics = _diagnostics;
+    return this;
+  }
+
+  public String getState() {
+    return _state;
+  }
+
+  public AnalyticJob setState(String _state) {
+    this._state = _state;
+    return this;
+  }
+
+  public String getFinalStatus() {
+    return _finalStatus;
+  }
+
+  public AnalyticJob setFinalStatus(String _finalStatus) {
+    this._finalStatus = _finalStatus;
+    return this;
+  }
+
+  public String getClusterName() {
+    return _clusterName;
+  }
+
+  public AnalyticJob setClusterName(String _clusterName) {
+    this._clusterName = _clusterName;
+    return this;
+  }
+
+  public long getRunningContainers() {
+    return _runningContainers;
+  }
+
+  public AnalyticJob setRunningContainers(long _runningContainers) {
+    this._runningContainers = _runningContainers;
+    return this;
+  }
+
+  public long getElapsedTime() {
+    return _elapsedTime;
+  }
+
+  public AnalyticJob setElapsedTime(long _elapsedTime) {
+    this._elapsedTime = _elapsedTime;
+    return this;
+  }
+
+  public long getMemorySeconds() {
+    return _memorySeconds;
+  }
+
+  public AnalyticJob setMemorySeconds(long _memorySeconds) {
+    this._memorySeconds = _memorySeconds;
+    return this;
+  }
+
+  public long getVcoreSeconds() {
+    return _vcoreSeconds;
+  }
+
+  public AnalyticJob setVcoreSeconds(long _vcoreSeconds) {
+    this._vcoreSeconds = _vcoreSeconds;
+    return this;
+  }
+
 
   /**
    * Set the application id of this job

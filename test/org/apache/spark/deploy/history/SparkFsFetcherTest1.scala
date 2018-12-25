@@ -20,7 +20,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.net.URI
 
 import com.linkedin.drelephant.ElephantRunner
-import com.linkedin.drelephant.analysis.{AnalyticJob, AnalyticJobGeneratorHadoop3}
+import com.linkedin.drelephant.analysis.{AnalyticJobGeneratorHadoop2, AnalyticJob}
 import com.linkedin.drelephant.configurations.fetcher.{FetcherConfiguration, FetcherConfigurationData}
 import com.linkedin.drelephant.util.{SparkUtils, SparkUtilsTest}
 import javax.xml.parsers.DocumentBuilderFactory
@@ -106,7 +106,7 @@ class SparkFsFetcherTest1 extends FunSpec with Matchers with MockitoSugar {
 
 object SparkFsFetcherTest1 {
   def main(args: Array[String]) {
-    val analyticJobGenerator = new AnalyticJobGeneratorHadoop3()
+    val analyticJobGenerator = new AnalyticJobGeneratorHadoop2()
     analyticJobGenerator.updateResourceManagerAddresses()
     val todos: java.util.List[AnalyticJob] = analyticJobGenerator.fetchAnalyticJobs()
 

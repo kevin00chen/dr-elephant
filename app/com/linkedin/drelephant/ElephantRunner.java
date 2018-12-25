@@ -175,21 +175,7 @@ public class ElephantRunner implements Runnable {
         AppResult result = _analyticJob.getAnalysis();
 
         dbService.saveYarnAppResult(result);
-//        result.save();
-//
-//        result.jobName = "";
-//        result.jobDefId = "";
-//        result.flowDefId = "";
-//        logger.info("===========" + result.toString());
-//        logger.info("xxxxxxxxxxxx " + result.yarnAppHeuristicResults.size());
-//        Model.db().save(result.yarnAppHeuristicResults);
-//
-//        int x = 0;
-//        for (AppHeuristicResult appHeuristicResult : result.yarnAppHeuristicResults) {
-//          Model.db().save(appHeuristicResult.yarnAppHeuristicResultDetails);
-//          x += appHeuristicResult.yarnAppHeuristicResultDetails.size();
-//        }
-//        logger.info("yyyyyyyyyy " + x);
+        dbService.saveDataDetail(_analyticJob);
 
         long processingTime = System.currentTimeMillis() - analysisStartTimeMillis;
         logger.info(String.format("Analysis of %s took %sms", analysisName, processingTime));

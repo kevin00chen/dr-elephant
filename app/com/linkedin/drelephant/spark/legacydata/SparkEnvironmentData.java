@@ -25,10 +25,14 @@ import java.util.Properties;
 public class SparkEnvironmentData {
   private final Properties _sparkProperties;
   private final Properties _systemProperties;
+  private final Properties _jvmInformations;
+  private final Properties _classPathEntries;
 
   public SparkEnvironmentData() {
     _sparkProperties = new Properties();
     _systemProperties = new Properties();
+    _jvmInformations = new Properties();
+    _classPathEntries = new Properties();
   }
 
   public void addSparkProperty(String key, String value) {
@@ -37,6 +41,14 @@ public class SparkEnvironmentData {
 
   public void addSystemProperty(String key, String value) {
     _systemProperties.put(key, value);
+  }
+
+  public void addJVMProperty(String key, String value) {
+    _jvmInformations.put(key, value);
+  }
+
+  public void addClassPathProperty(String key, String value) {
+    _classPathEntries.put(key, value);
   }
 
   public String getSparkProperty(String key) {
@@ -55,8 +67,24 @@ public class SparkEnvironmentData {
     return _systemProperties.getProperty(key);
   }
 
+  public String getJVMInformation(String key) {
+    return _jvmInformations.getProperty(key);
+  }
+
+  public String getClassPathEntry(String key) {
+    return _classPathEntries.getProperty(key);
+  }
+
   public Properties getSparkProperties() {
     return _sparkProperties;
+  }
+
+  public Properties getJVMInformations() {
+    return _jvmInformations;
+  }
+
+  public Properties getClassPathEntries() {
+    return _classPathEntries;
   }
 
   public Properties getSystemProperties() {
@@ -65,6 +93,6 @@ public class SparkEnvironmentData {
 
   @Override
   public String toString() {
-    return _sparkProperties.toString() + "\n\n\n" + _systemProperties.toString();
+    return _sparkProperties.toString() + "\n\n\n" + _systemProperties.toString() + "\n\n\n" + _jvmInformations.toString() + "\n\n\n" + _classPathEntries.toString();
   }
 }

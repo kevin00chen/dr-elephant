@@ -73,6 +73,8 @@ public class AnalyticJob {
   private long _memorySeconds;
   private long _vcoreSeconds;
 
+  private HadoopApplicationData _dataDetail;
+
   /**
    * Returns the application type
    * E.g., Mapreduce or Spark
@@ -173,6 +175,14 @@ public class AnalyticJob {
   public AnalyticJob setVcoreSeconds(long _vcoreSeconds) {
     this._vcoreSeconds = _vcoreSeconds;
     return this;
+  }
+
+  public HadoopApplicationData getDataDetail() {
+    return _dataDetail;
+  }
+
+  public void setDataDetail(HadoopApplicationData _dataDetail) {
+    this._dataDetail = _dataDetail;
   }
 
 
@@ -337,6 +347,7 @@ public class AnalyticJob {
   public AppResult getAnalysis() throws Exception {
     ElephantFetcher fetcher = ElephantContext.instance().getFetcherForApplicationType(getAppType());
     HadoopApplicationData data = fetcher.fetchData(this);
+    setDataDetail(data);
 
     JobType jobType = ElephantContext.instance().matchJobType(data);
     String jobTypeName = jobType == null ? UNKNOWN_JOB_TYPE : jobType.getName();

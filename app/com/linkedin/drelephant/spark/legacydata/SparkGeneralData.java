@@ -25,11 +25,20 @@ import java.util.Set;
 public class SparkGeneralData {
   private Set<String> _adminAcls;
   private Set<String> _viewAcls;
-  private String _applicationId;
-  private String _applicationName;
-  private String _sparkUser;
-  private long _startTime;
-  private long _endTime;
+  private String _applicationId = "";
+  private String _applicationName = "";
+  private String _sparkUser = "";
+  private String _attemptId = "";
+  private long _startTime = 0L;
+  private long _endTime = 0L;
+
+  public String getAttemptId() {
+    return _attemptId;
+  }
+
+  public void setAttemptId(String _attemptId) {
+    this._attemptId = _attemptId;
+  }
 
   public Set<String> getAdminAcls() {
     return _adminAcls;

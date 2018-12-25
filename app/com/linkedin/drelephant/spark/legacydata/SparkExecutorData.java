@@ -43,15 +43,24 @@ public class SparkExecutorData {
     public long inputBytes = 0L;
     public long outputBytes = 0L;
     public long shuffleRead = 0L;
-    public long totalGCTime = 0L;
     public long shuffleWrite = 0L;
+    public long inputRecord = 0L;
+    public long outputRecord = 0L;
+
+    public String stdout = "";
+    public String stderr = "";
+
+    public long startTime = 0L;
+    public long finishTime = 0L;
+    public String finishReason = "";
 
     public String toString() {
       return "{execId: " + execId + ", hostPort:" + hostPort + " , rddBlocks: " + rddBlocks + ", memUsed: " + memUsed
-          + ", maxMem: " + maxMem + ", diskUsed: " + diskUsed + ", totalTasks" + totalTasks + ", tasksActive: "
-          + activeTasks + ", tasksComplete: " + completedTasks + ", tasksFailed: " + failedTasks + ", duration: "
-          + duration + ", inputBytes: " + inputBytes + ", outputBytes:" + outputBytes + ", shuffleRead: " + shuffleRead
-          + ", shuffleWrite: " + shuffleWrite + ", totalGCTime: " + totalGCTime + "}";
+              + ", maxMem: " + maxMem + ", diskUsed: " + diskUsed + ", totalTasks" + totalTasks + ", tasksActive: "
+              + activeTasks + ", tasksComplete: " + completedTasks + ", tasksFailed: " + failedTasks + ", duration: "
+              + duration + ", inputBytes: " + inputBytes + ", outputBytes:" + outputBytes + ", shuffleRead: " + shuffleRead
+              + ", shuffleWrite: " + shuffleWrite + ", inputRecord: " + inputRecord + ", outputRecord: " + outputRecord
+              + ", stdout: " + stdout + ", stderr: " + stderr + "}";
     }
   }
 

@@ -36,12 +36,17 @@ public class SparkJobProgressData {
   private final Set<Integer> _completedJobs = new HashSet<Integer>();
   private final Set<Integer> _failedJobs = new HashSet<Integer>();
 
+  private final Map<TaskAttemptId, TaskInfo> _taskIdToInfo = new HashMap<TaskAttemptId, TaskInfo>();
   private final Map<StageAttemptId, StageInfo> _stageIdToInfo = new HashMap<StageAttemptId, StageInfo>();
   private final Set<StageAttemptId> _completedStages = new HashSet<StageAttemptId>();
   private final Set<StageAttemptId> _failedStages = new HashSet<StageAttemptId>();
 
   public void addJobInfo(int jobId, JobInfo info) {
     _jobIdToInfo.put(jobId, info);
+  }
+
+  public Map<Integer, JobInfo> getJobIdToInfo() {
+    return _jobIdToInfo;
   }
 
   public void addCompletedJob(int jobId) {
@@ -54,6 +59,10 @@ public class SparkJobProgressData {
 
   public void addStageInfo(int stageId, int attemptId, StageInfo info) {
     _stageIdToInfo.put(new StageAttemptId(stageId, attemptId), info);
+  }
+
+  public void addTaskInfo(long taskId, int attemptId, TaskInfo info) {
+    _taskIdToInfo.put(new TaskAttemptId(taskId, attemptId), info);
   }
 
   public void addCompletedStages(int stageId, int attemptId) {
@@ -104,6 +113,14 @@ public class SparkJobProgressData {
 
   public StageInfo getStageInfo(int stageId, int attemptId) {
     return _stageIdToInfo.get(new StageAttemptId(stageId, attemptId));
+  }
+
+  public Map<StageAttemptId, StageInfo> getStageIdToInfo() {
+    return _stageIdToInfo;
+  }
+
+  public Map<TaskAttemptId, TaskInfo> getTaskIdToInfo() {
+    return _taskIdToInfo;
   }
 
   public Set<StageAttemptId> getCompletedStages() {
@@ -187,6 +204,35 @@ public class SparkJobProgressData {
     }
   }
 
+  public static class TaskAttemptId {
+    public long taskId;
+    public int attemptId;
+
+    public TaskAttemptId(long taskId, int attemptId) {
+      this.taskId = taskId;
+      this.attemptId = attemptId;
+    }
+
+    @Override
+    public int hashCode() {
+      return new Long(taskId).hashCode() * 31 + new Integer(attemptId).hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof TaskAttemptId) {
+        TaskAttemptId other = (TaskAttemptId) obj;
+        return taskId == other.taskId && attemptId == other.attemptId;
+      }
+      return false;
+    }
+
+    @Override
+    public String toString() {
+      return "id: " + taskId + " # attemptId: " + attemptId;
+    }
+  }
+
   public static class JobInfo {
     public int jobId;
     public String jobGroup;
@@ -200,6 +246,7 @@ public class SparkJobProgressData {
     public int numCompletedTasks = 0;
     public int numSkippedTasks = 0;
     public int numFailedTasks = 0;
+    public int numKilledTasks = 0;
 
     /* Stages */
     public int numActiveStages = 0;
@@ -207,6 +254,10 @@ public class SparkJobProgressData {
     public final Set<Integer> completedStageIndices = new HashSet<Integer>();
     public int numSkippedStages = 0;
     public int numFailedStages = 0;
+
+    public String status;
+    public String failedStageIds = "";
+    public String error = "";
 
     public void addStageId(int stageId) {
       stageIds.add(stageId);
@@ -216,35 +267,50 @@ public class SparkJobProgressData {
       return SparkJobProgressData.getFailureRate(numCompletedTasks, numFailedTasks);
     }
 
+    @Override
     public String toString() {
       return String.format("{jobId:%s, jobGroup:%s, startTime:%s, endTime:%s, numTask:%s, numActiveTasks:%s, "
-              + "numCompletedTasks:%s, numSkippedTasks:%s, numFailedTasks:%s, numActiveStages:%s, "
-              + "completedStageIndices:%s, stages:%s, numSkippedStages:%s, numFailedStages:%s}", jobId, jobGroup,
-          startTime, endTime, numTasks, numActiveTasks, numCompletedTasks, numSkippedTasks, numFailedTasks,
-          numActiveStages, getListString(completedStageIndices), getListString(stageIds), numSkippedStages,
-          numFailedStages);
+                      + "numCompletedTasks:%s, numSkippedTasks:%s, numFailedTasks:%s, numActiveStages:%s, "
+                      + "completedStageIndices:%s, stages:%s, numSkippedStages:%s, numFailedStages:%s}", jobId, jobGroup,
+              startTime, endTime, numTasks, numActiveTasks, numCompletedTasks, numSkippedTasks, numFailedTasks,
+              numActiveStages, getListString(completedStageIndices), getListString(stageIds), numSkippedStages,
+              numFailedStages);
     }
   }
 
   public static class StageInfo {
+    public int jobId;
+    public int stageId;
+    public int attemptId;
     public int numActiveTasks;
     public int numCompleteTasks;
-    public final Set<Integer> completedIndices = new HashSet<Integer>();
+    public int numKilledTasks;
     public int numFailedTasks;
+    public final Set<Integer> completedIndices = new HashSet<Integer>();
 
     // Total accumulated executor runtime
     public long executorRunTime;
+    public long executorCpuTime;
     // Total stage duration
     public long duration;
 
     // Note, currently calculating I/O speed on stage level does not make sense
     // since we do not have information about specific I/O time.
     public long inputBytes = 0;
+    public long inputRecords = 0;
     public long outputBytes = 0;
+    public long outputRecords = 0;
     public long shuffleReadBytes = 0;
+    public long shuffleReadRecords = 0;
     public long shuffleWriteBytes = 0;
+    public long shuffleWriteRecords = 0;
     public long memoryBytesSpilled = 0;
     public long diskBytesSpilled = 0;
+
+    public String accumulables = "";
+    public String parentIds = "";
+    public String failureReason = "";
+    public String status = "";
 
     public String name;
     public String description;
@@ -259,12 +325,63 @@ public class SparkJobProgressData {
     @Override
     public String toString() {
       return String.format("{numActiveTasks:%s, numCompleteTasks:%s, completedIndices:%s, numFailedTasks:%s,"
-              + " executorRunTime:%s, inputBytes:%s, outputBytes:%s, shuffleReadBytes:%s, shuffleWriteBytes:%s,"
-              + " memoryBytesSpilled:%s, diskBytesSpilled:%s, name:%s, description:%s}",
-          numActiveTasks, numCompleteTasks, getListString(completedIndices), numFailedTasks, executorRunTime,
-          inputBytes, outputBytes, shuffleReadBytes, shuffleWriteBytes, memoryBytesSpilled, diskBytesSpilled, name,
-          description);
+                      + " executorRunTime:%s, inputBytes:%s, outputBytes:%s, shuffleReadBytes:%s, shuffleWriteBytes:%s,"
+                      + " memoryBytesSpilled:%s, diskBytesSpilled:%s, name:%s, description:%s}",
+              numActiveTasks, numCompleteTasks, getListString(completedIndices), numFailedTasks, executorRunTime,
+              inputBytes, outputBytes, shuffleReadBytes, shuffleWriteBytes, memoryBytesSpilled, diskBytesSpilled, name,
+              description);
     }
+  }
+
+  public static class TaskInfo {
+    // from TaskUIData
+    public int jobId = 0;
+    public int stageId = 0;
+    public int attemptId = 0;
+    public long taskId = 0;
+    public long launchTime = 0;
+    public long finishTime = 0;
+    public long duration = 0;
+    public long gettingResultTime = 0;
+    public String executorId = "";
+    public String status = "";
+    public String accumulables = "";
+    public String host = "";
+    public String locality = "";
+    public String errorMessage = "";
+
+    // from TaskMetricsUIData
+    public long executorDeserTime = 0;
+    public long executorDeserCpuTime = 0;
+    public long executorRunTime = 0;
+    public long executorCpuTime = 0;
+    public long resultSize = 0;
+    public long jvmGCTime = 0;
+    public long resultSerialTime = 0;
+    public long memoryBytesSpilled = 0;
+    public long diskBytesSpilled = 0;
+    public long peakExecutionMemory = 0;
+
+    // from InputMetrics
+    public long inputBytesRead = 0;
+    public long inputRecordRead = 0;
+
+    // from OutputMetrics
+    public long outputBytesWritten = 0;
+    public long outputRecordsWritten = 0;
+
+    // from ShuffleReadMetrics
+    public long shuffleRemoteBlocksFetched = 0;
+    public long shuffleLocalBlocksFetched = 0;
+    public long shuffleRemoteBytesRead = 0;
+    public long shuffleLocalBytesRead = 0;
+    public long shuffleFetchWaitTime = 0;
+    public long shuffleRecordsRead = 0;
+
+    // from ShuffleWriteMetrics
+    public long shuffleBytesWritten = 0;
+    public long shuffleRecordsWritten = 0;
+    public long shuffleWriteTime = 0;
   }
 
   private static String getListString(Collection collection) {

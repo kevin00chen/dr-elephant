@@ -17,20 +17,24 @@
 package org.apache.spark.deploy.history
 
 import java.io.InputStream
+import java.util
 import java.util.{Set => JSet, Properties, List => JList, HashSet => JHashSet, ArrayList => JArrayList}
 
+import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.executor.TaskMetrics
+
 import scala.collection.mutable
+import scala.collection.mutable.HashMap
 
 import com.linkedin.drelephant.analysis.ApplicationType
 import com.linkedin.drelephant.spark.legacydata._
 import com.linkedin.drelephant.spark.legacydata.SparkExecutorData.ExecutorInfo
 import com.linkedin.drelephant.spark.legacydata.SparkJobProgressData.JobInfo
 
-import org.apache.spark.SparkConf
-import org.apache.spark.scheduler.{ApplicationEventListener, ReplayListenerBus, StageInfo}
+import org.apache.spark.{ExceptionFailure, Resubmitted, SparkContext, SparkConf}
+import org.apache.spark.scheduler._
 import org.apache.spark.storage.{RDDInfo, StorageStatus, StorageStatusListener, StorageStatusTrackingListener}
 import org.apache.spark.ui.env.EnvironmentListener
-import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.ui.jobs.JobProgressListener
 import org.apache.spark.ui.storage.StorageListener
 import org.apache.spark.util.collection.OpenHashSet
@@ -51,7 +55,7 @@ class SparkDataCollection extends SparkApplicationData {
   lazy val jobProgressListener = new JobProgressListener(sparkConf)
   lazy val environmentListener = new EnvironmentListener()
   lazy val storageStatusListener = new StorageStatusListener(sparkConf)
-  lazy val executorsListener = new ExecutorsListener(storageStatusListener, sparkConf)
+  lazy val executorsListener = new ExecutorsListener(storageStatusListener)
   lazy val storageListener = new StorageListener(storageStatusListener)
 
   // This is a customized listener that tracks peak used memory
@@ -143,6 +147,15 @@ class SparkDataCollection extends SparkApplicationData {
           // do nothing
         }
       }
+
+      applicationEventListener.appAttemptId match {
+        case Some(s: String) => {
+          _applicationData.setAttemptId(s)
+        }
+        case None => {
+          // do nothing
+        }
+      }
     }
     _applicationData
   }
@@ -153,10 +166,16 @@ class SparkDataCollection extends SparkApplicationData {
       _environmentData = new SparkEnvironmentData()
       environmentListener.systemProperties.foreach { case (name, value) =>
         _environmentData.addSystemProperty(name, value)
-                                                   }
+      }
       environmentListener.sparkProperties.foreach { case (name, value) =>
         _environmentData.addSparkProperty(name, value)
-                                                  }
+      }
+      environmentListener.jvmInformation.foreach { case (name, value) =>
+        _environmentData.addJVMProperty(name, value)
+      }
+      environmentListener.classpathEntries.foreach { case (name, value) =>
+        _environmentData.addClassPathProperty(name, value)
+      }
     }
     _environmentData
   }
@@ -165,10 +184,10 @@ class SparkDataCollection extends SparkApplicationData {
     if (_executorData == null) {
       _executorData = new SparkExecutorData()
 
-      for (statusId <- 0 until executorsListener.activeStorageStatusList.size) {
+      for (statusId <- 0 until executorsListener.storageStatusList.size) {
         val info = new ExecutorInfo()
 
-        val status = executorsListener.activeStorageStatusList(statusId)
+        val status = executorsListener.storageStatusList(statusId)
 
         info.execId = status.blockManagerId.executorId
         info.hostPort = status.blockManagerId.hostPort
@@ -179,28 +198,27 @@ class SparkDataCollection extends SparkApplicationData {
         info.memUsed = storageStatusTrackingListener.executorIdToMaxUsedMem.getOrElse(info.execId, 0L)
         info.maxMem = status.maxMem
         info.diskUsed = status.diskUsed
-        val executorToTaskSummary = executorsListener.executorToTaskSummary.get(info.execId)
-        executorToTaskSummary match {
-          case Some(sm) => {
-            info.activeTasks = sm.tasksActive
-            info.failedTasks = sm.tasksFailed
-            info.completedTasks = sm.tasksComplete
-            info.duration = sm.duration
-            info.inputBytes = sm.inputBytes
-            info.shuffleRead = sm.shuffleRead
-            info.shuffleWrite = sm.shuffleWrite
-          }
-          case _ => {
-            info.activeTasks = 0
-            info.failedTasks = 0
-            info.completedTasks = 0
-            info.duration = 0
-            info.inputBytes = 0
-            info.shuffleRead = 0
-            info.shuffleWrite = 0
-          }
-        }
+        info.activeTasks = executorsListener.executorToTasksActive.getOrElse(info.execId, 0)
+        info.failedTasks = executorsListener.executorToTasksFailed.getOrElse(info.execId, 0)
+        info.completedTasks = executorsListener.executorToTasksComplete.getOrElse(info.execId, 0)
         info.totalTasks = info.activeTasks + info.failedTasks + info.completedTasks
+        info.duration = executorsListener.executorToDuration.getOrElse(info.execId, 0L)
+        info.inputBytes = executorsListener.executorToInputBytes.getOrElse(info.execId, 0L)
+        info.shuffleRead = executorsListener.executorToShuffleRead.getOrElse(info.execId, 0L)
+        info.shuffleWrite = executorsListener.executorToShuffleWrite.getOrElse(info.execId, 0L)
+
+        info.inputRecord = executorsListener.executorToInputRecords.getOrElse(info.execId, 0L)
+        info.outputRecord = executorsListener.executorToOutputRecords.getOrElse(info.execId, 0L)
+
+        val logUrlsMap = executorsListener.executorToLogUrls.getOrElse(info.execId, Map.empty)
+        info.stdout = logUrlsMap.getOrElse("stdout", "")
+        info.stderr = logUrlsMap.getOrElse("stderr", "")
+
+        val executorUIData = executorsListener.executorIdToData.getOrElse(info.execId, new ExecutorUIData(0))
+        info.startTime = executorUIData.startTime
+        info.finishTime = info.startTime + info.duration
+        info.finishReason = executorUIData.finishReason.getOrElse("")
+
         _executorData.setExecutorInfo(info.execId, info)
       }
     }
@@ -210,29 +228,13 @@ class SparkDataCollection extends SparkApplicationData {
   override def getJobProgressData(): SparkJobProgressData = {
     if (_jobProgressData == null) {
       _jobProgressData = new SparkJobProgressData()
+      val stageIdToJobIdMap = new util.HashMap[Integer, Integer]
+      val jobIdToFailedStages = new util.HashMap[Integer, (JHashSet[Integer], JList[String])]
 
-      // Add JobInfo
       jobProgressListener.jobIdToData.foreach { case (id, data) =>
-        val jobInfo = new JobInfo()
-
-        jobInfo.jobId = data.jobId
-        jobInfo.jobGroup = data.jobGroup.getOrElse("")
-        jobInfo.numActiveStages = data.numActiveStages
-        jobInfo.numActiveTasks = data.numActiveTasks
-        jobInfo.numCompletedTasks = data.numCompletedTasks
-        jobInfo.numFailedStages = data.numFailedStages
-        jobInfo.numFailedTasks = data.numFailedTasks
-        jobInfo.numSkippedStages = data.numSkippedStages
-        jobInfo.numSkippedTasks = data.numSkippedTasks
-        jobInfo.numTasks = data.numTasks
-
-        jobInfo.startTime = data.submissionTime.getOrElse(0)
-        jobInfo.endTime = data.completionTime.getOrElse(0)
-
-        data.stageIds.foreach{ case (id: Int) => jobInfo.addStageId(id)}
-        addIntSetToJSet(data.completedStageIndices, jobInfo.completedStageIndices)
-
-        _jobProgressData.addJobInfo(id, jobInfo)
+        data.stageIds.foreach{ case (id: Int) =>
+          stageIdToJobIdMap.put(id, data.jobId)
+        }
       }
 
       // Add Stage Info
@@ -247,15 +249,69 @@ class SparkDataCollection extends SparkApplicationData {
             ""
           }
         }
+        val stageId = id._1
+
+        val jobId = if (stageIdToJobIdMap.containsKey(stageId)) {
+          stageIdToJobIdMap.get(stageId).toInt
+        } else {
+          -1
+        }
+
+        stageInfo.jobId = jobId
+        stageInfo.stageId = stageId
+        stageInfo.attemptId = id._2
+        stageInfo.numKilledTasks = data.numKilledTasks
+        stageInfo.executorCpuTime = data.executorCpuTime
+        stageInfo.inputRecords = data.inputRecords
+        stageInfo.outputRecords = data.outputRecords
+        stageInfo.shuffleReadRecords = data.shuffleReadRecords
+        stageInfo.shuffleWriteRecords = data.shuffleWriteRecords
+        stageInfo.accumulables = data.accumulables.toString
         stageInfo.description = data.description.getOrElse("")
+        val stageIdInfo = jobProgressListener.stageIdToInfo.get(stageId)
+        stageIdInfo match {
+          case Some(info) => {
+            val status = info.getStatusString
+
+            stageInfo.status = status
+            val failureReason = info.failureReason match {
+              case Some(reason) => reason
+              case _ => ""
+            }
+            stageInfo.failureReason = failureReason
+            // 如果当前stage状态为failed
+            if (status == "failed") {
+              // 如果当前stage所属job中已有失败stage,则追加,否则新增当前stage的信息
+              try {
+                jobIdToFailedStages.get(stageId)._1.add(stageId)
+                jobIdToFailedStages.get(stageId)._2.add(s"Stage-${stageId}\n${failureReason}")
+              } catch {
+                case e: Exception => {
+                  val failedStageIds = new JHashSet[Integer]()
+                  val failedStageReasons = new JArrayList[String]()
+                  failedStageIds.add(stageId)
+                  failedStageReasons.add(s"Stage-${stageId}\n${failureReason}\n")
+                  jobIdToFailedStages.put(jobId, (failedStageIds, failedStageReasons))
+                }
+              }
+            }
+          }
+          case _ =>
+          // do nothing
+        }
+
         stageInfo.diskBytesSpilled = data.diskBytesSpilled
         stageInfo.executorRunTime = data.executorRunTime
-        stageInfo.duration = sparkStageInfo match {
+        sparkStageInfo match {
           case Some(info: StageInfo) => {
             val submissionTime = info.submissionTime.getOrElse(0L)
-            info.completionTime.getOrElse(submissionTime) - submissionTime
+            stageInfo.duration = info.completionTime.getOrElse(submissionTime) - submissionTime
+            val parentIds = info.parentIds
+            stageInfo.parentIds =
+              if (parentIds == null || parentIds.isEmpty) ""
+              else parentIds.mkString(",")
           }
-          case _ => 0L
+          case _ => stageInfo.duration = 0L
         }
         stageInfo.inputBytes = data.inputBytes
         stageInfo.memoryBytesSpilled = data.memoryBytesSpilled
@@ -267,7 +323,127 @@ class SparkDataCollection extends SparkApplicationData {
         stageInfo.shuffleWriteBytes = data.shuffleWriteBytes
         addIntSetToJSet(data.completedIndices, stageInfo.completedIndices)
 
+        data.taskData.foreach { task =>
+          val taskInfo = new SparkJobProgressData.TaskInfo()
+          val taskUIDataInfo = task._2.taskInfo
+          val taskUIMetrics = task._2.metrics
+          val errorMessage = task._2.errorMessage
+
+          val taskId = task._1
+          val taskAttemptId = task._2.taskInfo.attemptNumber
+
+          taskInfo.stageId = id._1
+          taskInfo.taskId = taskId
+          taskInfo.attemptId = taskAttemptId
+
+          taskInfo.launchTime = taskUIDataInfo.launchTime
+          taskInfo.finishTime = taskUIDataInfo.finishTime
+          taskInfo.gettingResultTime = taskUIDataInfo.gettingResultTime
+          taskInfo.status = taskUIDataInfo.status
+          taskInfo.accumulables = taskUIDataInfo.accumulables.mkString(",")
+          taskInfo.host = taskUIDataInfo.host
+          taskInfo.locality = taskUIDataInfo.taskLocality.toString
+          taskInfo.errorMessage = taskUIDataInfo.status
+          if (taskUIDataInfo.status == "SUCCESS") {
+            taskInfo.duration = taskUIDataInfo.duration
+          }
+          taskInfo.executorId = taskUIDataInfo.executorId
+
+          errorMessage match {
+            case Some(value) => {
+              taskInfo.errorMessage = value
+            }
+            case None => {
+              // do nothing
+            }
+          }
+
+          taskUIMetrics match {
+            case Some(value) => {
+              taskInfo.executorDeserTime = value.executorDeserializeTime
+              taskInfo.executorDeserCpuTime = value.executorDeserializeCpuTime
+              taskInfo.executorRunTime = value.executorRunTime
+              taskInfo.executorCpuTime = value.executorCpuTime
+              taskInfo.resultSize = value.resultSize
+              taskInfo.jvmGCTime = value.jvmGCTime
+              taskInfo.resultSerialTime = value.resultSerializationTime
+              taskInfo.memoryBytesSpilled = value.memoryBytesSpilled
+              taskInfo.diskBytesSpilled = value.diskBytesSpilled
+              taskInfo.peakExecutionMemory = value.peakExecutionMemory
+
+              val taskInputMetrics = value.inputMetrics
+              taskInfo.inputBytesRead = taskInputMetrics.bytesRead
+              taskInfo.inputRecordRead = taskInputMetrics.recordsRead
+
+              val taskOutputMetrics = value.outputMetrics
+              taskInfo.outputBytesWritten = taskOutputMetrics.bytesWritten
+              taskInfo.outputRecordsWritten = taskOutputMetrics.recordsWritten
+
+              val taskShuffleReadMetrics = value.shuffleReadMetrics
+              taskInfo.shuffleRemoteBlocksFetched = taskShuffleReadMetrics.remoteBlocksFetched
+              taskInfo.shuffleLocalBlocksFetched = taskShuffleReadMetrics.localBlocksFetched
+              taskInfo.shuffleRemoteBytesRead = taskShuffleReadMetrics.remoteBytesRead
+              taskInfo.shuffleLocalBytesRead = taskShuffleReadMetrics.localBytesRead
+              taskInfo.shuffleFetchWaitTime = taskShuffleReadMetrics.fetchWaitTime
+              taskInfo.shuffleRecordsRead = taskShuffleReadMetrics.recordsRead
+
+              val taskShuffleWriteMetrics = value.shuffleWriteMetrics
+              taskInfo.shuffleBytesWritten = taskShuffleWriteMetrics.bytesWritten
+              taskInfo.shuffleRecordsWritten = taskShuffleWriteMetrics.recordsWritten
+              taskInfo.shuffleWriteTime = taskShuffleWriteMetrics.writeTime
+            }
+            case None => {
+              // do nothing
+            }
+          }
+
+          _jobProgressData.addTaskInfo(taskId, taskAttemptId, taskInfo)
+        }
+
         _jobProgressData.addStageInfo(id._1, id._2, stageInfo)
+      }
+
+      import collection.JavaConverters._
+
+      // Add JobInfo
+      jobProgressListener.jobIdToData.foreach { case (id, data) =>
+        val jobInfo = new JobInfo()
+        var failedStageIds = ""
+        var error = ""
+
+        val jobId = data.jobId
+        jobInfo.jobId = jobId
+
+        if (jobIdToFailedStages.containsKey(jobId)) {
+          failedStageIds = jobIdToFailedStages.get(jobId)._1.asScala.mkString(",")
+          error = jobIdToFailedStages.get(jobId)._2.asScala.mkString("\n\n")
+        }
+
+        jobInfo.failedStageIds = failedStageIds
+        jobInfo.error = error
+        jobInfo.jobGroup = data.jobGroup.getOrElse("")
+        jobInfo.numActiveStages = data.numActiveStages
+        jobInfo.numActiveTasks = data.numActiveTasks
+        jobInfo.numCompletedTasks = data.numCompletedTasks
+        jobInfo.numFailedStages = data.numFailedStages
+        jobInfo.numFailedTasks = data.numFailedTasks
+        jobInfo.numSkippedStages = data.numSkippedStages
+        jobInfo.numSkippedTasks = data.numSkippedTasks
+        jobInfo.numKilledTasks = data.numKilledTasks
+        jobInfo.numTasks = data.numTasks
+        jobInfo.status = data.status.name()
+
+        jobInfo.startTime = data.submissionTime.getOrElse(0)
+        jobInfo.endTime = data.completionTime.getOrElse(0)
+
+        data.stageIds.foreach{ case (id: Int) =>
+          jobInfo.addStageId(id)
+          stageIdToJobIdMap.put(id, data.jobId)
+        }
+
+        addIntSetToJSet(data.completedStageIndices, jobInfo.completedStageIndices)
+
+        _jobProgressData.addJobInfo(id, jobInfo)
       }
 
       // Add completed jobs
@@ -342,3 +518,105 @@ object SparkDataCollection {
     }
   }
 }
+
+@DeveloperApi
+class ExecutorsListener(storageStatusListener: StorageStatusListener) extends SparkListener {
+  val executorToTasksActive = HashMap[String, Int]()
+  val executorToTasksComplete = HashMap[String, Int]()
+  val executorToTasksFailed = HashMap[String, Int]()
+  val executorToDuration = HashMap[String, Long]()
+  val executorToInputBytes = HashMap[String, Long]()
+  val executorToInputRecords = HashMap[String, Long]()
+  val executorToOutputBytes = HashMap[String, Long]()
+  val executorToOutputRecords = HashMap[String, Long]()
+  val executorToShuffleRead = HashMap[String, Long]()
+  val executorToShuffleWrite = HashMap[String, Long]()
+  val executorToLogUrls = HashMap[String, Map[String, String]]()
+  val executorIdToData = HashMap[String, ExecutorUIData]()
+
+  def storageStatusList: Seq[StorageStatus] = storageStatusListener.storageStatusList
+
+  override def onExecutorAdded(executorAdded: SparkListenerExecutorAdded): Unit = synchronized {
+    val eid = executorAdded.executorId
+    executorToLogUrls(eid) = executorAdded.executorInfo.logUrlMap
+    executorIdToData(eid) = ExecutorUIData(executorAdded.time)
+  }
+
+  override def onExecutorRemoved(executorRemoved: SparkListenerExecutorRemoved): Unit = synchronized {
+    val eid = executorRemoved.executorId
+    val uiData = executorIdToData(eid)
+    uiData.finishTime = Some(executorRemoved.time)
+    uiData.finishReason = Some(executorRemoved.reason)
+  }
+
+  override def onApplicationStart(applicationStart: SparkListenerApplicationStart): Unit = {
+    applicationStart.driverLogs.foreach { logs =>
+      val storageStatus = storageStatusList.find { s =>
+        s.blockManagerId.executorId == SparkContext.LEGACY_DRIVER_IDENTIFIER ||
+          s.blockManagerId.executorId == SparkContext.DRIVER_IDENTIFIER
+      }
+      storageStatus.foreach { s => executorToLogUrls(s.blockManagerId.executorId) = logs.toMap }
+    }
+  }
+
+  override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = synchronized {
+    val eid = taskStart.taskInfo.executorId
+    executorToTasksActive(eid) = executorToTasksActive.getOrElse(eid, 0) + 1
+  }
+
+  override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = synchronized {
+    val info = taskEnd.taskInfo
+    if (info != null) {
+      val eid = info.executorId
+      taskEnd.reason match {
+        case Resubmitted =>
+          // Note: For resubmitted tasks, we continue to use the metrics that belong to the
+          // first attempt of this task. This may not be 100% accurate because the first attempt
+          // could have failed half-way through. The correct fix would be to keep track of the
+          // metrics added by each attempt, but this is much more complicated.
+          return
+        case e: ExceptionFailure =>
+          executorToTasksFailed(eid) = executorToTasksFailed.getOrElse(eid, 0) + 1
+        case _ =>
+          executorToTasksComplete(eid) = executorToTasksComplete.getOrElse(eid, 0) + 1
+      }
+
+      executorToTasksActive(eid) = executorToTasksActive.getOrElse(eid, 1) - 1
+      executorToDuration(eid) = executorToDuration.getOrElse(eid, 0L) + info.duration
+
+      // Update shuffle read/write
+      val metrics = taskEnd.taskMetrics
+      if (metrics != null) {
+        executorToInputBytes(eid) =
+          executorToInputBytes.getOrElse(eid, 0L) + metrics.inputMetrics.bytesRead
+        executorToInputRecords(eid) =
+          executorToInputRecords.getOrElse(eid, 0L) + metrics.inputMetrics.recordsRead
+
+        executorToOutputBytes(eid) =
+          executorToOutputBytes.getOrElse(eid, 0L) + metrics.inputMetrics.bytesRead
+        executorToOutputRecords(eid) =
+          executorToOutputRecords.getOrElse(eid, 0L) + metrics.inputMetrics.recordsRead
+
+        executorToShuffleRead(eid) =
+          executorToShuffleRead.getOrElse(eid, 0L) + metrics.shuffleReadMetrics.remoteBytesRead
+
+        executorToShuffleWrite(eid) =
+          executorToShuffleWrite.getOrElse(eid, 0L) + metrics.shuffleWriteMetrics.shuffleBytesWritten
+      }
+    }
+  }
+
+}
+
+/**
+  * These are kept mutable and reused throughout a task's lifetime to avoid excessive reallocation.
+  */
+case class TaskUIData(
+                       var taskInfo: TaskInfo,
+                       var taskMetrics: Option[TaskMetrics] = None,
+                       var errorMessage: Option[String] = None)
+
+case class ExecutorUIData(
+                           val startTime: Long,
+                           var finishTime: Option[Long] = None,
+                           var finishReason: Option[String] = None)

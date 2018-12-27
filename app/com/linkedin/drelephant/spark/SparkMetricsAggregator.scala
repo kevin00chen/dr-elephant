@@ -99,12 +99,20 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
 
   private def executorInstancesOf(data: SparkApplicationData): Option[Int] = {
     val appConfigurationProperties = data.appConfigurationProperties
-    appConfigurationProperties.get(SPARK_EXECUTOR_INSTANCES_KEY).map(_.toInt)
+    appConfigurationProperties.get(SPARK_EXECUTOR_INSTANCES_KEY).map(_.toInt) match {
+      case Some(value) ⇒ Some(value)
+      case _ if data.executorSummaries.size > 1 ⇒ Some(data.executorSummaries.size - 1)
+    }
   }
 
   private def executorMemoryBytesOf(data: SparkApplicationData): Option[Long] = {
     val appConfigurationProperties = data.appConfigurationProperties
-    appConfigurationProperties.get(SPARK_EXECUTOR_MEMORY_KEY).map(MemoryFormatUtils.stringToBytes)
+    appConfigurationProperties.get(SPARK_EXECUTOR_MEMORY_KEY).map(MemoryFormatUtils.stringToBytes) match {
+      case Some(value) ⇒ Some(value)
+      case _ if data.executorSummaries.size > 1 ⇒ {
+        Some(data.executorSummaries.map(_.maxMemory).reduce(_ + _))
+      }
+    }
   }
 
   private def applicationDurationMillisOf(data: SparkApplicationData): Long = {

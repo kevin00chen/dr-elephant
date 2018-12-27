@@ -13,24 +13,20 @@
 * License for the specific language governing permissions and limitations under
 * the License.
 *@
-<p>This heuristic concerns the distribution (min, 25p, median, 75p,
-max) of key executor metrics including input bytes, shuffle read
-bytes, shuffle write bytes, storage memory used, and task time. The
-max-to-median ratio determines the severity of any particular metric.</p>
+<p>
+  这项指标通过分析Executor的【input bytes, shuffle read bytes, shuffle write bytes, storage memory used, task time】的(min, 25p, median, 75p, max)分布情况得到。
+  该指标的异常等级用 max / median 值的比例偏差表示, 偏差越大代表该指标项异常越大。
+</p>
 
-<p>Spark application get resources from YARN allocated all at once,
-and don't release these until the application completes. Thus, it's
-important to balance load on the executors to avoid wasting
-resources.</p>
 
-<p>To achieve better load balancing:</p>
+<p>
+  Spark应用在启动时从YARN申请Executor资源,直到应用执行完成才释放,所以平衡各Executor上的负载(即数据分布均匀,每个Executor处理的数据量相差不大)很重要。
+</p>
+
+<p>Executor负载可以考虑从以下几方面调整:</p>
 
 <ul>
-  <li>use an appropriate number of partitions (some small multiple of
-  the # of executors) so that there are enough tasks handling those
-  partitions to keep the executors busy</li>
-  <li>try avoiding key skew; you should know which partitioner you are
-  using and what is the distribution of your keys</li>
-  <li>consider enabling spark.speculation, so that straggler tasks can
-  be re-launched</li>
+  <li>合理调整Partition数,一般可考虑调整到Executor数 * core数的若干倍,尽量充分利用Core,让Executor忙起来。</li>
+  <li>避免数据倾斜,需要根据业务逻辑了解到每次数据分partition时的key分布,以及分partition的策略。</li>
+  <li>可以考虑开启 spark.speculation 参数,可通过自动重试避免一些异常task。</li>
 </ul>

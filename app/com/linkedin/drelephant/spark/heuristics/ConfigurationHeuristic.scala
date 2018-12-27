@@ -52,7 +52,20 @@ class ConfigurationHeuristic(private val heuristicConfigurationData: HeuristicCo
     val evaluator = new Evaluator(this, data)
 
     def formatProperty(property: Option[String]): String =
-      property.getOrElse("Not presented. Using default.")
+      property.getOrElse("未指定,使用默认值.")
+
+    def formatExecutorInstanceProperty(): String = {
+      val executorInstances = evaluator.executorInstances.map(_.toString)
+      val executorRealInstances = evaluator.executorRealInstances.map(_.toString) match {
+        case Some(value) ⇒ s"实际Executor数为: $value"
+        case _ ⇒ ""
+      }
+
+      executorInstances match {
+        case Some(value) ⇒ value
+        case _ ⇒ s"未指定,使用默认值. ${executorRealInstances}"
+      }
+    }
 
     val resultDetails = Seq(
       new HeuristicResultDetails(
@@ -65,7 +78,7 @@ class ConfigurationHeuristic(private val heuristicConfigurationData: HeuristicCo
       ),
       new HeuristicResultDetails(
         SPARK_EXECUTOR_INSTANCES_KEY,
-        formatProperty(evaluator.executorInstances.map(_.toString))
+        formatExecutorInstanceProperty
       ),
       new HeuristicResultDetails(
         SPARK_EXECUTOR_CORES_KEY,
@@ -137,6 +150,7 @@ object ConfigurationHeuristic {
   val SPARK_DRIVER_MEMORY_KEY = "spark.driver.memory"
   val SPARK_EXECUTOR_MEMORY_KEY = "spark.executor.memory"
   val SPARK_EXECUTOR_INSTANCES_KEY = "spark.executor.instances"
+  val SPARK_EXECUTOR_REAL_INSTANCES_KEY = "spark.executor.real-instances"
   val SPARK_EXECUTOR_CORES_KEY = "spark.executor.cores"
   val SPARK_SERIALIZER_KEY = "spark.serializer"
   val SPARK_APPLICATION_DURATION = "spark.application.duration"
@@ -164,6 +178,9 @@ object ConfigurationHeuristic {
 
     lazy val executorMemoryBytes: Option[Long] =
       Try(getProperty(SPARK_EXECUTOR_MEMORY_KEY).map(MemoryFormatUtils.stringToBytes)).getOrElse(None)
+
+    lazy val executorRealInstances: Option[Int] =
+      Try(getProperty(SPARK_EXECUTOR_REAL_INSTANCES_KEY).map(_.toInt)).getOrElse(None)
 
     lazy val executorInstances: Option[Int] =
       Try(getProperty(SPARK_EXECUTOR_INSTANCES_KEY).map(_.toInt)).getOrElse(None)

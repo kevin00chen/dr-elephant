@@ -101,7 +101,7 @@ class SparkMetricsAggregator(private val aggregatorConfigurationData: Aggregator
     val appConfigurationProperties = data.appConfigurationProperties
     appConfigurationProperties.get(SPARK_EXECUTOR_INSTANCES_KEY).map(_.toInt) match {
       case Some(value) ⇒ Some(value)
-      case _ if data.executorSummaries.size > 1 ⇒ Some(data.executorSummaries.size - 1)
+      case _ ⇒ appConfigurationProperties.get(SPARK_EXECUTOR_REAL_INSTANCES_KEY).map(_.toInt)
     }
   }
 
@@ -133,5 +133,6 @@ object SparkMetricsAggregator {
   val ALLOCATED_MEMORY_WASTE_BUFFER_PERCENTAGE_KEY = "allocated_memory_waste_buffer_percentage"
 
   val SPARK_EXECUTOR_INSTANCES_KEY = "spark.executor.instances"
+  val SPARK_EXECUTOR_REAL_INSTANCES_KEY = "spark.executor.real-instances"
   val SPARK_EXECUTOR_MEMORY_KEY = "spark.executor.memory"
 }

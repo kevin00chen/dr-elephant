@@ -20,11 +20,12 @@ import java.sql.Timestamp
 import java.util.Date
 
 import com.linkedin.drelephant.analysis.AnalyticJob
+import com.linkedin.drelephant.spark.SparkMetricsAggregator
 import models._
 import org.apache.commons.lang.StringEscapeUtils
 import org.apache.spark.deploy.history.SparkDataCollection
 
-import scala.collection.JavaConverters
+import scala.collection.{mutable, JavaConverters}
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
@@ -65,8 +66,15 @@ object LegacyDataConverters {
     )
   }
 
-  def extractAppConfigurationProperties(legacyData: SparkApplicationData): Map[String, String] =
-    legacyData.getEnvironmentData.getSparkProperties.asScala.toMap
+  def extractAppConfigurationProperties(legacyData: SparkApplicationData): Map[String, String] = {
+    val executorNums = legacyData.getExecutorData.getExecutors.size
+    val realExecutorNum = mutable.Map.empty[String, String]
+
+    if (executorNums > 1) {
+      realExecutorNum(SparkMetricsAggregator.SPARK_EXECUTOR_REAL_INSTANCES_KEY) = executorNums.toString
+    }
+    realExecutorNum.toMap ++ legacyData.getEnvironmentData.getSparkProperties.asScala.toMap
+  }
 
   def extractApplicationInfo(legacyData: SparkApplicationData): ApplicationInfoImpl = {
     val generalData = legacyData.getGeneralData

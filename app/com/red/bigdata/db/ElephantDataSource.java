@@ -19,7 +19,7 @@ public class ElephantDataSource implements Serializable {
 
   private static volatile ElephantDataSource elephantDataSource = null;
   private DataSource dataSource;
-  private static Object lockObj = new Object();
+  private static final Object lockObj = new Object();
 
   public static ElephantDataSource getInstance() {
     if (elephantDataSource == null) {
@@ -33,7 +33,7 @@ public class ElephantDataSource implements Serializable {
   private ElephantDataSource(){
     try {
       logger.info("Create DataBase Connection...");
-      dataSource = DataSources.unpooledDataSource("jdbc:mysql://ckm.cfzo10akusv7.rds.cn-north-1.amazonaws.com.cn:3306/drelephant", "ckm", "AIvfcK2q9QubE");
+      dataSource = DataSources.unpooledDataSource("jdbc:mysql://ckm.cfzo10akusv7.rds.cn-north-1.amazonaws.com.cn:3306/drelephant?useUnicode=true&characterEncoding=utf-8", "ckm", "AIvfcK2q9QubE");
     } catch (Exception e) {
       logger.error("Create DataBase Connection Failed!", e);
     }

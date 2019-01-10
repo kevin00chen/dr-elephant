@@ -71,6 +71,7 @@ public class ElephantRunner implements Runnable {
   }
 
   private void loadAnalyticJobGenerator() {
+    _paramsToCluster = ElephantContext.instance().getParamsToCluster();
     if (HadoopSystemContext.isHadoop2Env()) {
       _analyticJobGenerator = new AnalyticJobGeneratorHadoop2(_paramsToCluster);
     } else {
@@ -94,9 +95,9 @@ public class ElephantRunner implements Runnable {
         @Override
         public Void run() {
           HDFSContext.load();
+          ElephantContext.init();
           loadGeneralConfiguration();
           loadAnalyticJobGenerator();
-          ElephantContext.init();
 
           // Initialize the metrics registries.
           MetricsController.init();
@@ -127,6 +128,7 @@ public class ElephantRunner implements Runnable {
             List<AnalyticJob> todos = new ArrayList<AnalyticJob>();
             try {
               for (String clusterName: _paramsToCluster.keySet()) {
+                logger.info("Fetching apps for clusterName = " + clusterName);
                 todos.addAll(_analyticJobGenerator.fetchAnalyticJobs(clusterName));
               }
               DatabaseAccess dao = DatabaseAccess.getInstance();

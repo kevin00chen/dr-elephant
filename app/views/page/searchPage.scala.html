@@ -105,6 +105,18 @@
           <input type="hidden" id="form-finished-time-end" name="finished-time-end" value="" />
         </div>
 
+        <!--Clusters filter-->
+        <div class="checkbox">
+          <label><input type="checkbox" id="form-clusters-enable" name="clusters-enable" value=""> 集群</label>
+        </div>
+        <div class="form-group" style="padding-left:10px;">
+          <select class="form-control" id="form-clusters" name="clusters">
+            @for(cluster <- com.linkedin.drelephant.ElephantContext.instance().getClusters) {
+              <option value="@cluster">@cluster</option>
+            }
+          </select>
+        </div>
+
         <button type="submit" class="btn btn-default" id="submit-button">Get Result</button>
       </form>
     }

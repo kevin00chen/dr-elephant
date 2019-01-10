@@ -1316,6 +1316,15 @@ public class Web extends Controller {
    *        "value": 0
    *      }
    *    ],
+   *    "clusters": [
+   *      {
+   *        "name": "cluster-1",
+   *        "value": "cluster-1"
+   *      },{
+   *        "name": "cluster-2",
+   *        "value": "cluster-2"
+   *      },
+   *    ]
    *    "id": "search"
    *  }
    *}
@@ -1325,6 +1334,7 @@ public class Web extends Controller {
     JsonObject searchOptions = new JsonObject();
     JsonArray jobCategory = new JsonArray();
     JsonArray severities = new JsonArray();
+    JsonArray clusterCategory = new JsonArray();
 
     Map<ApplicationType, List<JobType>> applicationTypeListMap = ElephantContext.instance().getAppTypeToJobTypes();
 
@@ -1358,8 +1368,17 @@ public class Web extends Controller {
       severities.add(severityObject);
     }
 
+    List<String> clusters = ElephantContext.instance().getClusters();
+    for (String cluster : clusters) {
+      JsonObject clusterObj = new JsonObject();
+      clusterObj.addProperty(JsonKeys.NAME, cluster);
+      clusterObj.addProperty(JsonKeys.VALUE, cluster);
+      clusterCategory.add(clusterObj);
+    }
+
     searchOptions.add(JsonKeys.JOB_CATEGORY, jobCategory);
     searchOptions.add(JsonKeys.SEVERITIES, severities);
+    searchOptions.add(JsonKeys.CLUSTERS, clusterCategory);
     searchOptions.addProperty(JsonKeys.ID, "search");
     JsonObject parent = new JsonObject();
     parent.add(JsonKeys.SEARCH_OPTS, searchOptions);

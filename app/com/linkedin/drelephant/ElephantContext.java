@@ -16,6 +16,7 @@
 
 package com.linkedin.drelephant;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.linkedin.drelephant.analysis.ApplicationType;
@@ -444,6 +445,10 @@ public class ElephantContext {
 
   public Map<ApplicationType, List<JobType>> getAppTypeToJobTypes() {
     return ImmutableMap.copyOf(_appTypeToJobTypes);
+  }
+
+  public List<String> getClusters() {
+    return ImmutableList.copyOf(_paramsToCluster.keySet());
   }
 
   public Map<String, Html> getHeuristicToView() {

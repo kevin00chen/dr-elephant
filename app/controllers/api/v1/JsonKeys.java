@@ -41,6 +41,7 @@ public class JsonKeys {
   public static final String SEVERITIES = "severities";
   public static final String JOB_CATEGORY = "jobcategory";
   public static final String TOTAL = "total";
+  public static final String CLUSTERS = "clusters";
   public static final String SUMMARIES = "summaries";
   public static final String SCHEDULER = "scheduler";
   public static final String CRITICAL = "critical";

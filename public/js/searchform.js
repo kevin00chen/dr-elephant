@@ -26,6 +26,8 @@ $(document).ready(function(){
   var queueName = $("#form-queue-name");
   var jobtypeEnable = $("#form-job-type-enable");
   var jobtype = $("#form-job-type");
+  var clustersEnable = $("#form-clusters-enable");
+  var clusters = $("#form-clusters");
   var severityEnable = $("#form-severity-enable");
   var severity = $("#form-severity");
   var analysis = $("#form-analysis");
@@ -53,7 +55,9 @@ $(document).ready(function(){
       severity.prop('disabled', true);
       analysis.prop('disabled', true);
       jobtype.prop('disabled', true);
+      clusters.prop('disabled', true);
       jobtypeEnable.prop('disabled', true);
+      clustersEnable.prop('disabled', true);
       severityEnable.prop('disabled', true);
       datetimeEnable.prop('disabled', true);
       finishTimeBeginDate.prop('disabled', true);
@@ -66,7 +70,9 @@ $(document).ready(function(){
       severity.prop('disabled', true);
       analysis.prop('disabled', true);
       jobtype.prop('disabled', true);
+      clusters.prop('disabled', true);
       jobtypeEnable.prop('disabled', true);
+      clustersEnable.prop('disabled', true);
       severityEnable.prop('disabled', true);
       datetimeEnable.prop('disabled', true);
       finishTimeBeginDate.prop('disabled', true);
@@ -79,7 +85,9 @@ $(document).ready(function(){
       severity.prop('disabled', true);
       analysis.prop('disabled', true);
       jobtype.prop('disabled', true);
+      clusters.prop('disabled', true);
       jobtypeEnable.prop('disabled', true);
+      clustersEnable.prop('disabled', true);
       severityEnable.prop('disabled', true);
       datetimeEnable.prop('disabled', true);
       finishTimeBeginDate.prop('disabled', true);
@@ -90,6 +98,7 @@ $(document).ready(function(){
       jobDefId.prop('disabled', false);
       flowExecId.prop('disabled', false);
       jobtypeEnable.prop('disabled', false);
+      clustersEnable.prop('disabled', false);
       severityEnable.prop('disabled', false);
       datetimeEnable.prop('disabled', false);
       user.prop('disabled', false);
@@ -99,6 +108,12 @@ $(document).ready(function(){
       }
       else {
         jobtype.prop('disabled', true);
+      }
+      if(clustersEnable.prop('checked')){
+        clusters.prop('disabled', false);
+      }
+      else {
+        clusters.prop('disabled', true);
       }
       if(severityEnable.prop('checked')){
         severity.prop('disabled', false);
@@ -122,6 +137,7 @@ $(document).ready(function(){
   flowExecId.on("propertychange keyup input paste", updateForm);
   jobDefId.on("propertychange keyup input paste", updateForm);
   jobtypeEnable.change(updateForm);
+  clustersEnable.change(updateForm);
   severityEnable.change(updateForm);
   datetimeEnable.change(updateForm);
 

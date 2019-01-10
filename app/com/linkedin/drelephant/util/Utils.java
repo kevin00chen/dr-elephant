@@ -22,6 +22,9 @@ import com.google.gson.JsonObject;
 import com.linkedin.drelephant.analysis.Severity;
 import com.linkedin.drelephant.configurations.scheduler.SchedulerConfigurationData;
 import com.linkedin.drelephant.math.Statistics;
+
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
@@ -82,6 +85,14 @@ public final class Utils {
   public static Document loadXMLDoc(String filePath) {
     InputStream instream = null;
     logger.info("Loading configuration file " + filePath);
+
+//    try {
+//      File file = new File(filePath);
+//      instream =  new FileInputStream(file);
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//    }
+
     instream = ClassLoader.getSystemClassLoader().getResourceAsStream(filePath);
 
     if (instream == null) {
@@ -568,5 +579,13 @@ public final class Utils {
       datasets.add(element);
     }
     return datasets;
+  }
+
+  public static void setClusterConf(Configuration conf, Map<String, String> params) {
+//    conf.addResource("/Users/chenkaiming/Documents/xiaohongshu/env/hive-etl-conf/hadoop_conf/core-site.xml");
+//    conf.addResource("/Users/chenkaiming/Documents/xiaohongshu/env/hive-etl-conf/hadoop_conf/hdfs-site.xml");
+    for (String key : params.keySet()) {
+      conf.set(key, params.get(key));
+    }
   }
 }

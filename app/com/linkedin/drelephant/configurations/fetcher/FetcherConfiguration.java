@@ -36,8 +36,14 @@ import org.w3c.dom.NodeList;
 public class FetcherConfiguration {
   private static final Logger logger = Logger.getLogger(FetcherConfiguration.class);
   private List<FetcherConfigurationData> _fetchersConfDataList;
+  private Map<String, Map<String, String>> _paramsToCluster = new HashMap<String, Map<String, String>>();
 
   public FetcherConfiguration(Element configuration) {
+    parseFetcherConfiguration(configuration);
+  }
+
+  public FetcherConfiguration(Element configuration, Map<String, Map<String, String>> _paramsToCluster) {
+    this._paramsToCluster = _paramsToCluster;
     parseFetcherConfiguration(configuration);
   }
 
@@ -94,6 +100,7 @@ public class FetcherConfiguration {
         Map<String, String> paramsMap = Utils.getConfigurationParameters(fetcherElem);
 
         FetcherConfigurationData fetcherData = new FetcherConfigurationData(className, appType, paramsMap);
+        fetcherData.setParamsToCluster(_paramsToCluster);
         _fetchersConfDataList.add(fetcherData);
 
       }

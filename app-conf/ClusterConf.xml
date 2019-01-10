@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2016 LinkedIn Corp.
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations under
+  the License.
+-->
+
+<!-- 该文件用于配置多个需要监控的集群，主要配置YARN RM地址，HDFS访问地址，如果都是要默认端口，可以只写主机名公有IP，但是需要多一个<common-port/>标签
+
+  Example:
+  <cluster>
+    <name>Data-Hive-ETL</name>
+    <params>
+      <yarn.resourcemanager.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>
+      <dfs.namenode.rpc-address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>
+      <mapreduce.jobhistory.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:19888</mapreduce.jobhistory.webapp.address>
+    </params>
+  </cluster>
+-->
+<clusters>
+  <cluster>
+    <name>Data-Hive-ETL</name>
+    <params>
+      <yarn.resourcemanager.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>
+      <dfs.namenode.rpc-address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>
+      <mapreduce.jobhistory.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:19888</mapreduce.jobhistory.webapp.address>
+    </params>
+  </cluster>
+
+  <!--<cluster>-->
+    <!--<name>Data-UBT-V2</name>-->
+    <!--<params>-->
+      <!--<yarn.resourcemanager.webapp.address>ec2-52-81-106-158.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>-->
+      <!--<dfs.namenode.rpc-address>ec2-52-81-106-158.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>-->
+      <!--<mapreduce.jobhistory.webapp.address>ec2-52-81-106-158.cn-north-1.compute.amazonaws.com.cn:19888</mapreduce.jobhistory.webapp.address>-->
+    <!--</params>-->
+  <!--</cluster>-->
+</clusters>

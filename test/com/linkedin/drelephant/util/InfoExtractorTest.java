@@ -57,6 +57,7 @@ import play.test.FakeApplication;
 import play.test.Helpers;
 
 import scala.Tuple2;
+import scala.collection.immutable.List;
 import scala.collection.immutable.Map;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Vector;
@@ -280,7 +281,8 @@ public class InfoExtractorTest {
         new ApplicationInfoImpl("", "", new Vector<ApplicationAttemptInfoImpl>(0,1,0)),
             new Vector<JobData>(0,1,0),
             new Vector<StageData>(0,1,0),
-            new Vector<ExecutorSummary>(0,1,0));
+            new Vector<ExecutorSummary>(0,1,0),
+            null);
 
     InfoExtractor.loadInfo(result, data);
 
@@ -301,7 +303,8 @@ public class InfoExtractorTest {
         new ApplicationInfoImpl("", "", new Vector<ApplicationAttemptInfoImpl>(0,1,0)),
         new Vector<JobData>(0,1,0),
         new Vector<StageData>(0,1,0),
-        new Vector<ExecutorSummary>(0,1,0));
+        new Vector<ExecutorSummary>(0,1,0),
+        null);
 
     // test to make sure loadInfo does not throw exception if properties are not defined
     InfoExtractor.loadInfo(result, data);

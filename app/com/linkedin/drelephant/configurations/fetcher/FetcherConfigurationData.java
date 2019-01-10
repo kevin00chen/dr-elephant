@@ -17,6 +17,8 @@
 package com.linkedin.drelephant.configurations.fetcher;
 
 import com.linkedin.drelephant.analysis.ApplicationType;
+
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -27,6 +29,7 @@ public class FetcherConfigurationData {
   private final String _className;
   private final ApplicationType _appType;
   private final Map<String, String> _paramMap;
+  private Map<String, Map<String, String>> _paramsToCluster = new HashMap<String, Map<String, String>>();
 
   public FetcherConfigurationData(String className, ApplicationType appType, Map<String, String> paramMap) {
     _className = className;
@@ -44,5 +47,13 @@ public class FetcherConfigurationData {
 
   public Map<String, String> getParamMap() {
     return _paramMap;
+  }
+
+  public Map<String, Map<String, String>> getParamsToCluster() {
+    return _paramsToCluster;
+  }
+
+  public void setParamsToCluster(Map<String, Map<String, String>> _paramsToCluster) {
+    this._paramsToCluster = _paramsToCluster;
   }
 }

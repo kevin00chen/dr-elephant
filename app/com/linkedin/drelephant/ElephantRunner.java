@@ -30,7 +30,10 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,6 +60,7 @@ public class ElephantRunner implements Runnable {
   private HadoopSecurity _hadoopSecurity;
   private ThreadPoolExecutor _threadPoolExecutor;
   private AnalyticJobGenerator _analyticJobGenerator;
+  private Map<String, Map<String, String>> _paramsToCluster = new HashMap<String, Map<String, String>>();
 
   private void loadGeneralConfiguration() {
     Configuration configuration = ElephantContext.instance().getGeneralConf();
@@ -68,7 +72,7 @@ public class ElephantRunner implements Runnable {
 
   private void loadAnalyticJobGenerator() {
     if (HadoopSystemContext.isHadoop2Env()) {
-      _analyticJobGenerator = new AnalyticJobGeneratorHadoop2();
+      _analyticJobGenerator = new AnalyticJobGeneratorHadoop2(_paramsToCluster);
     } else {
       throw new RuntimeException("Unsupported Hadoop major version detected. It is not 2.x.");
     }
@@ -120,9 +124,11 @@ public class ElephantRunner implements Runnable {
               continue;
             }
 
-            List<AnalyticJob> todos;
+            List<AnalyticJob> todos = new ArrayList<AnalyticJob>();
             try {
-              todos = _analyticJobGenerator.fetchAnalyticJobs();
+              for (String clusterName: _paramsToCluster.keySet()) {
+                todos.addAll(_analyticJobGenerator.fetchAnalyticJobs(clusterName));
+              }
               DatabaseAccess dao = DatabaseAccess.getInstance();
               DBService dbService = new DBService(dao);
               dbService.saveYarnAppOriginal(todos);

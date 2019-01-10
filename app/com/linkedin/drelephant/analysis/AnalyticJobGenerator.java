@@ -53,6 +53,16 @@ public interface AnalyticJobGenerator {
       throws IOException, AuthenticationException;
 
   /**
+   * Provides a list of AnalyticJobs that should be calculated
+   *
+   * @return a list of AnalyticJobs
+   * @throws IOException
+   * @throws AuthenticationException
+   */
+  public List<AnalyticJob> fetchAnalyticJobs(String clusterName)
+          throws IOException, AuthenticationException;
+
+  /**
    * Add an AnalyticJob into retry list. Those jobs will be provided again via #fetchAnalyticJobs under
    * the generator's decision.
    *

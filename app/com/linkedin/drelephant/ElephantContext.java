@@ -27,6 +27,8 @@ import com.linkedin.drelephant.analysis.HeuristicResult;
 import com.linkedin.drelephant.analysis.JobType;
 import com.linkedin.drelephant.configurations.aggregator.AggregatorConfiguration;
 import com.linkedin.drelephant.configurations.aggregator.AggregatorConfigurationData;
+import com.linkedin.drelephant.configurations.cluster.ClusterConfiguration;
+import com.linkedin.drelephant.configurations.cluster.ClusterConfigurationData;
 import com.linkedin.drelephant.configurations.fetcher.FetcherConfiguration;
 import com.linkedin.drelephant.configurations.fetcher.FetcherConfigurationData;
 import com.linkedin.drelephant.configurations.heuristic.HeuristicConfiguration;
@@ -61,12 +63,16 @@ public class ElephantContext {
   private static final Logger logger = Logger.getLogger(ElephantContext.class);
   private static ElephantContext INSTANCE;
 
-  private static final String AGGREGATORS_CONF = "AggregatorConf.xml";
-  private static final String FETCHERS_CONF = "FetcherConf.xml";
-  private static final String HEURISTICS_CONF = "HeuristicConf.xml";
-  private static final String JOB_TYPES_CONF = "JobTypeConf.xml";
-  private static final String GENERAL_CONF = "GeneralConf.xml";
-  private static final String AUTO_TUNING_CONF = "AutoTuningConf.xml";
+//  private static final String CONF_DIR = "/Users/chenkaiming/files/workspace/apache/dr-elephant/app-conf/";
+  private static final String CONF_DIR = "";
+
+  private static final String AGGREGATORS_CONF = CONF_DIR + "AggregatorConf.xml";
+  private static final String FETCHERS_CONF = CONF_DIR + "FetcherConf.xml";
+  private static final String HEURISTICS_CONF = CONF_DIR + "HeuristicConf.xml";
+  private static final String JOB_TYPES_CONF = CONF_DIR + "JobTypeConf.xml";
+  private static final String GENERAL_CONF = CONF_DIR + "GeneralConf.xml";
+  private static final String AUTO_TUNING_CONF = CONF_DIR + "AutoTuningConf.xml";
+  private static final String CLUSTER_CONF = CONF_DIR + "ClusterConf.xml";
 
   private final Map<String, List<String>> _heuristicGroupedNames = new HashMap<String, List<String>>();
   private List<HeuristicConfigurationData> _heuristicsConfData;
@@ -84,6 +90,12 @@ public class ElephantContext {
   private final Map<ApplicationType, ElephantFetcher> _typeToFetcher = new HashMap<ApplicationType, ElephantFetcher>();
   private final Map<String, Html> _heuristicToView = new HashMap<String, Html>();
   private Map<ApplicationType, List<JobType>> _appTypeToJobTypes = new HashMap<ApplicationType, List<JobType>>();
+
+  private Map<String, Map<String, String>> _paramsToCluster = new HashMap<String, Map<String, String>>();
+
+  public Map<String, Map<String, String>> getParamsToCluster() {
+    return _paramsToCluster;
+  }
 
   public static void init() {
     INSTANCE = new ElephantContext();
@@ -106,6 +118,7 @@ public class ElephantContext {
   }
 
   private void loadConfiguration() {
+    loadClusterConfigs();
     loadAggregators();
     loadFetchers();
     loadHeuristics();
@@ -161,7 +174,7 @@ public class ElephantContext {
   private void loadFetchers() {
     Document document = Utils.loadXMLDoc(FETCHERS_CONF);
 
-    _fetchersConfData = new FetcherConfiguration(document.getDocumentElement()).getFetchersConfigurationData();
+    _fetchersConfData = new FetcherConfiguration(document.getDocumentElement(), _paramsToCluster).getFetchersConfigurationData();
     for (FetcherConfigurationData data : _fetchersConfData) {
       try {
         Class<?> fetcherClass = Class.forName(data.getClassName());
@@ -305,6 +318,14 @@ public class ElephantContext {
     Document document = Utils.loadXMLDoc(JOB_TYPES_CONF);
     JobTypeConfiguration conf = new JobTypeConfiguration(document.getDocumentElement());
     _appTypeToJobTypes = conf.getAppTypeToJobTypeList();
+  }
+
+  private void loadClusterConfigs() {
+    Document document = Utils.loadXMLDoc(CLUSTER_CONF);
+    ClusterConfiguration conf = new ClusterConfiguration(document.getDocumentElement());
+    for (ClusterConfigurationData confData : conf.getClustersConfDataList()) {
+      _paramsToCluster.put(confData.getClusterName(), confData.getClusterParams());
+    }
   }
 
   /**

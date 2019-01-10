@@ -41,14 +41,9 @@ import org.apache.log4j.Logger;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Properties;
-import java.util.TimeZone;
 
 /**
  * This class implements the Fetcher for MapReduce Applications on Hadoop2
@@ -65,7 +60,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
   private static final int SERIAL_NUMBER_DIRECTORY_DIGITS = 6;
   protected static final double DEFALUT_MAX_LOG_SIZE_IN_MB = 500;
 
-  private FileSystem _fs;
+  private Map<String, FileSystem> _clusterToFs; // _fs;
   private String _historyLocation;
   private String _intermediateHistoryLocation;
   private double _maxLogSizeInMB;
@@ -88,14 +83,25 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     logger.info("Using timezone: " + _timeZone.getID());
 
     Configuration conf = new Configuration();
+
+//    this._historyLocation = "/tmp/hadoop-yarn/staging/history/done";
+//    this._intermediateHistoryLocation = "/tmp/hadoop-yarn/staging/history/done_intermediate";
     this._historyLocation = conf.get("mapreduce.jobhistory.done-dir");
     this._intermediateHistoryLocation = conf.get("mapreduce.jobhistory.intermediate-done-dir");
-    try {
-      URI uri = new URI(this._historyLocation);
-      this._fs = FileSystem.get(uri, conf);
-    } catch( URISyntaxException ex) {
-      this._fs = FileSystem.get(conf);
+
+    Map<String, FileSystem> clusterToFs = new HashMap<String, FileSystem>();
+    for (String clusterName : fetcherConfData.getParamsToCluster().keySet()) {
+      Utils.setClusterConf(conf, fetcherConfData.getParamsToCluster().get(clusterName));
+      try {
+        URI uri = new URI("hdfs://" + conf.get("dfs.namenode.rpc-address") + this._historyLocation);
+//        URI uri = new URI(this._historyLocation);
+        clusterToFs.put(clusterName, FileSystem.get(uri, conf));
+      } catch( URISyntaxException ex) {
+        clusterToFs.put(clusterName, FileSystem.get(conf));
+      }
     }
+    this._clusterToFs = clusterToFs;
+
     logger.info("Intermediate history dir: " + _intermediateHistoryLocation);
     logger.info("History done dir: " + _historyLocation);
   }
@@ -146,7 +152,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     return StringUtils.join(new String[]{_historyLocation, datePart, serialPart, ""}, File.separator);
   }
 
-  private DataFiles getHistoryFiles(AnalyticJob job) throws IOException {
+  private DataFiles getHistoryFiles(AnalyticJob job, FileSystem fs) throws IOException {
     String jobId = Utils.getJobIdFromApplicationId(job.getAppId());
     String jobConfPath = null;
     String jobHistPath = null;
@@ -154,8 +160,8 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     // Search files in done dir
     String jobHistoryDirPath = getHistoryDir(job);
 
-    if (_fs.exists(new Path(jobHistoryDirPath))) {
-      RemoteIterator<LocatedFileStatus> it = _fs.listFiles(new Path(jobHistoryDirPath), false);
+    if (fs.exists(new Path(jobHistoryDirPath))) {
+      RemoteIterator<LocatedFileStatus> it = fs.listFiles(new Path(jobHistoryDirPath), false);
       while (it.hasNext() && (jobConfPath == null || jobHistPath == null)) {
         String name = it.next().getPath().getName();
         if (name.contains(jobId)) {
@@ -173,7 +179,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     String intermediateDirPath = _intermediateHistoryLocation + File.separator + job.getUser() + File.separator;
     if (jobConfPath == null) {
       jobConfPath = intermediateDirPath + jobId + "_conf.xml";
-      if (!_fs.exists(new Path(jobConfPath))) {
+      if (!fs.exists(new Path(jobConfPath))) {
         throw new FileNotFoundException("Can't find config of " + jobId + " in neither "
                 + jobHistoryDirPath + " nor " + intermediateDirPath);
       }
@@ -181,7 +187,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     }
     if (jobHistPath == null) {
       try {
-        RemoteIterator<LocatedFileStatus> it = _fs.listFiles(new Path(intermediateDirPath), false);
+        RemoteIterator<LocatedFileStatus> it = fs.listFiles(new Path(intermediateDirPath), false);
         while (it.hasNext()) {
           String name = it.next().getPath().getName();
           if (name.contains(jobId) && name.endsWith(".jhist")) {
@@ -204,7 +210,9 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
 
   @Override
   public MapReduceApplicationData fetchData(AnalyticJob job) throws IOException {
-    DataFiles files = getHistoryFiles(job);
+    String clusterName = job.getClusterName();
+    FileSystem fs = _clusterToFs.get(clusterName);
+    DataFiles files = getHistoryFiles(job, fs);
     String confFile = files.getJobConfPath();
     String histFile = files.getJobHistPath();
     String appId = job.getAppId();
@@ -215,7 +223,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
 
     // Fetch job config
     Configuration jobConf = new Configuration(false);
-    jobConf.addResource(_fs.open(new Path(confFile)), confFile);
+    jobConf.addResource(fs.open(new Path(confFile)), confFile);
     Properties jobConfProperties = new Properties();
     for (Map.Entry<String, String> entry : jobConf) {
       jobConfProperties.put(entry.getKey(), entry.getValue());
@@ -223,7 +231,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     jobData.setJobConf(jobConfProperties);
 
     // Check if job history file is too large and should be throttled
-    if (_fs.getFileStatus(new Path(histFile)).getLen() > _maxLogSizeInMB * FileUtils.ONE_MB) {
+    if (fs.getFileStatus(new Path(histFile)).getLen() > _maxLogSizeInMB * FileUtils.ONE_MB) {
       String errMsg = "The history log of MapReduce application: " + appId + " is over the limit size of "
               + _maxLogSizeInMB + " MB, the parsing process gets throttled.";
       logger.warn(errMsg);
@@ -233,7 +241,7 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
     }
 
     // Analyze job history file
-    JobHistoryParser parser = new JobHistoryParser(_fs, histFile);
+    JobHistoryParser parser = new JobHistoryParser(fs, histFile);
     JobHistoryParser.JobInfo jobInfo = parser.parse();
     IOException parseException = parser.getParseException();
     if (parseException != null) {

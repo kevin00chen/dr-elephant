@@ -66,6 +66,12 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
 
   private final ArrayList<AnalyticJob> _secondRetryQueue = new ArrayList<AnalyticJob>();
 
+  private Map<String, Map<String, String>> _paramsToCluster;
+
+  public AnalyticJobGeneratorHadoop2(Map<String, Map<String, String>> _paramsToCluster) {
+    this._paramsToCluster = _paramsToCluster;
+  }
+
   public void updateResourceManagerAddresses() {
     if (Boolean.valueOf(configuration.get(IS_RM_HA_ENABLED))) {
       String resourceManagers = configuration.get(RESOURCE_MANAGER_IDS);
@@ -174,6 +180,63 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     return appList;
   }
 
+  /**
+   *  Fetch all the succeeded and failed applications/analytic jobs from the resource manager.
+   *
+   * @return
+   * @throws IOException
+   * @throws AuthenticationException
+   */
+  @Override
+  public List<AnalyticJob> fetchAnalyticJobs(String clusterName)
+          throws IOException, AuthenticationException {
+    List<AnalyticJob> appList = new ArrayList<AnalyticJob>();
+    String resourceManagerAddress = _paramsToCluster.get(clusterName).get(RESOURCE_MANAGER_ADDRESS);
+
+    // There is a lag of job data from AM/NM to JobHistoryServer HDFS, we shouldn't use the current time, since there
+    // might be new jobs arriving after we fetch jobs. We provide one minute delay to address this lag.
+    _currentTime = System.currentTimeMillis() - FETCH_DELAY;
+    updateAuthToken();
+
+    logger.info("Fetching recent finished application runs between last time: " + (_lastTime + 1)
+            + ", and current time: " + _currentTime);
+
+    // Fetch all succeeded apps
+    URL succeededAppsURL = new URL(new URL("http://" + resourceManagerAddress), String.format(
+            "/ws/v1/cluster/apps?finalStatus=SUCCEEDED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+            String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
+    logger.info("The succeeded apps URL is " + succeededAppsURL);
+    List<AnalyticJob> succeededApps = readApps(succeededAppsURL, clusterName);
+    appList.addAll(succeededApps);
+
+    // Fetch all failed apps
+    // state: Application Master State
+    // finalStatus: Status of the Application as reported by the Application Master
+    URL failedAppsURL = new URL(new URL("http://" + resourceManagerAddress), String.format(
+            "/ws/v1/cluster/apps?finalStatus=FAILED&state=FINISHED&finishedTimeBegin=%s&finishedTimeEnd=%s",
+            String.valueOf(_lastTime + 1), String.valueOf(_currentTime)));
+    List<AnalyticJob> failedApps = readApps(failedAppsURL, clusterName);
+    logger.info("The failed apps URL is " + failedAppsURL);
+    appList.addAll(failedApps);
+
+    // Append promises from the retry queue at the end of the list
+    while (!_firstRetryQueue.isEmpty()) {
+      appList.add(_firstRetryQueue.poll());
+    }
+
+    Iterator iteratorSecondRetry = _secondRetryQueue.iterator();
+    while (iteratorSecondRetry.hasNext()) {
+      AnalyticJob job = (AnalyticJob) iteratorSecondRetry.next();
+      if(job.readyForSecondRetry()) {
+        appList.add(job);
+        iteratorSecondRetry.remove();
+      }
+    }
+
+    _lastTime = _currentTime;
+    return appList;
+  }
+
   @Override
   public void addIntoRetries(AnalyticJob promise) {
     _firstRetryQueue.add(promise);
@@ -245,8 +308,6 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         ApplicationType type =
             ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
 
-//        ApplicationType type = new ApplicationType(app.get("applicationType").getValueAsText());
-
         String applicationTags = app.get("applicationTags").getValueAsText();
         String state = app.get("state").getValueAsText();
         String finalStatus = app.get("finalStatus").getValueAsText();
@@ -272,4 +333,62 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
     }
     return appList;
   }
+
+  /**
+   * Parse the returned json from Resource manager
+   *
+   * @param url The REST call
+   * @return
+   * @throws IOException
+   * @throws AuthenticationException Problem authenticating to resource manager
+   */
+  private List<AnalyticJob> readApps(URL url, String clusterName) throws IOException, AuthenticationException{
+    List<AnalyticJob> appList = new ArrayList<AnalyticJob>();
+
+    JsonNode rootNode = readJsonNode(url);
+    JsonNode apps = rootNode.path("apps").path("app");
+
+    for (JsonNode app : apps) {
+      String appId = app.get("id").getValueAsText();
+
+      // When called first time after launch, hit the DB and avoid duplicated analytic jobs that have been analyzed
+      // before.
+      if (_lastTime > _fetchStartTime || (_lastTime == _fetchStartTime && AppResult.find.byId(appId) == null)) {
+//      if (_lastTime > _fetchStartTime || (_lastTime == _fetchStartTime)) {
+        String user = app.get("user").getValueAsText();
+        String name = app.get("name").getValueAsText();
+        String queueName = app.get("queue").getValueAsText();
+        String trackingUrl = app.get("trackingUrl") != null? app.get("trackingUrl").getValueAsText() : null;
+        long startTime = app.get("startedTime").getLongValue();
+        long finishTime = app.get("finishedTime").getLongValue();
+
+        ApplicationType type =
+            ElephantContext.instance().getApplicationTypeForName(app.get("applicationType").getValueAsText());
+//        ApplicationType type = new ApplicationType(app.get("applicationType").getValueAsText());
+
+        String applicationTags = app.get("applicationTags").getValueAsText();
+        String state = app.get("state").getValueAsText();
+        String finalStatus = app.get("finalStatus").getValueAsText();
+        String diagnostics = app.get("diagnostics").getValueAsText();
+
+        long runningContainers = app.get("runningContainers").getLongValue();
+        long memorySeconds = app.get("memorySeconds").getLongValue();
+        long vcoreSeconds = app.get("vcoreSeconds").getLongValue();
+        long elapsedTime = app.get("elapsedTime").getLongValue();
+
+        // If the application type is supported
+        if (type != null) {
+          AnalyticJob analyticJob = new AnalyticJob();
+          analyticJob.setAppId(appId).setAppType(type).setUser(user).setName(name).setQueueName(queueName)
+                  .setTrackingUrl(trackingUrl).setStartTime(startTime).setFinishTime(finishTime).setDiagnostics(diagnostics)
+                  .setApplicationTags(applicationTags).setState(state).setFinalStatus(finalStatus).setClusterName(clusterName)
+                  .setRunningContainers(runningContainers).setMemorySeconds(memorySeconds).setVcoreSeconds(vcoreSeconds).setElapsedTime(elapsedTime);
+
+          appList.add(analyticJob);
+        }
+      }
+    }
+    return appList;
+  }
+
 }

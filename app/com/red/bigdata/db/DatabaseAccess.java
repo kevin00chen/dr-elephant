@@ -57,9 +57,9 @@ public class DatabaseAccess implements Serializable {
 
   public Long upsetYarnAppResult(AppResult appResult) throws SQLException {
     String sql = "replace into yarn_app_result" +
-            "(id, name, username, queue_name, start_time, finish_time, tracking_url, job_type, severity, score, workflow_depth, scheduler, job_name, job_exec_id, flow_exec_id, job_def_id, flow_def_id, job_exec_url, flow_exec_url, job_def_url, flow_def_url, resource_used, resource_wasted, total_delay) " +
+            "(id, name, username, queue_name, start_time, finish_time, tracking_url, job_type, severity, score, workflow_depth, scheduler, job_name, job_exec_id, flow_exec_id, job_def_id, flow_def_id, job_exec_url, flow_exec_url, job_def_url, flow_def_url, resource_used, resource_wasted, total_delay, cluster) " +
             "values " +
-            "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     logger.debug("Replace Into yarn_app_result ===>\n" + sql);
     return queryRunner.insert(
             sql,
@@ -88,7 +88,8 @@ public class DatabaseAccess implements Serializable {
                     appResult.flowDefUrl,
                     appResult.resourceUsed,
                     appResult.resourceWasted,
-                    appResult.totalDelay
+                    appResult.totalDelay,
+                    appResult.cluster
             });
   }
 

@@ -448,7 +448,9 @@ public class ElephantContext {
   }
 
   public List<String> getClusters() {
-    return ImmutableList.copyOf(_paramsToCluster.keySet());
+    List<String> result = ImmutableList.copyOf(_paramsToCluster.keySet()).asList();
+    result.add("ALL");
+    return result;
   }
 
   public Map<String, Html> getHeuristicToView() {

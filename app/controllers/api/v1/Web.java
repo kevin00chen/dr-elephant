@@ -1369,6 +1369,7 @@ public class Web extends Controller {
     }
 
     List<String> clusters = ElephantContext.instance().getClusters();
+    clusters.add("ALL");
     for (String cluster : clusters) {
       JsonObject clusterObj = new JsonObject();
       clusterObj.addProperty(JsonKeys.NAME, cluster);

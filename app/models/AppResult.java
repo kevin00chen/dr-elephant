@@ -49,6 +49,7 @@ public class AppResult extends Model {
   public static final int SCHEDULER_LIMIT = 20;
   public static final int URL_LEN_LIMIT = 800;
   public static final int FLOW_EXEC_ID_LIMIT = 255;
+  public static final int CLUSTER_NAME_LIMIT = 255;
 
   // Note that the Table column constants are actually the java variable names defined in this model.
   // This is because ebean operations require the model variable names to be passed as strings.
@@ -79,11 +80,12 @@ public class AppResult extends Model {
     public static final String RESOURCE_USAGE = "resourceUsed";
     public static final String WASTED_RESOURCES = "resourceWasted";
     public static final String TOTAL_DELAY = "totalDelay";
+    public static final String CLUSTER = "cluster";
   }
 
   public static String getSearchFields() {
     return Utils.commaSeparated(AppResult.TABLE.NAME, AppResult.TABLE.USERNAME, TABLE.QUEUE_NAME, AppResult.TABLE.JOB_TYPE,
-        AppResult.TABLE.SEVERITY, AppResult.TABLE.FINISH_TIME);
+        AppResult.TABLE.SEVERITY, AppResult.TABLE.FINISH_TIME, TABLE.CLUSTER);
   }
 
   @Id
@@ -159,6 +161,9 @@ public class AppResult extends Model {
   @Column(nullable = true)
   public long totalDelay;
 
+  @Column(length = CLUSTER_NAME_LIMIT, nullable = false)
+  public String cluster;
+
   @JsonManagedReference
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "yarnAppResult")
   public List<AppHeuristicResult> yarnAppHeuristicResults;
@@ -167,6 +172,6 @@ public class AppResult extends Model {
 
   @Override
   public String toString() {
-    return id + "," + name + "," + username + "," + queueName + "," + startTime + "," + finishTime + "," + trackingUrl + "," + jobType + "," + score + "," + workflowDepth + "," + scheduler + "," + jobName + "," + jobExecId + "," + flowExecId + "," + jobDefId + "," + flowDefId + "," + jobExecUrl + "," + flowExecUrl + "," + jobDefUrl + "," + flowDefUrl + "," + resourceUsed + "," + resourceWasted + "," + totalDelay;
+    return id + "," + name + "," + username + "," + queueName + "," + startTime + "," + finishTime + "," + trackingUrl + "," + jobType + "," + score + "," + workflowDepth + "," + scheduler + "," + jobName + "," + jobExecId + "," + flowExecId + "," + jobDefId + "," + flowDefId + "," + jobExecUrl + "," + flowExecUrl + "," + jobDefUrl + "," + flowDefUrl + "," + resourceUsed + "," + resourceWasted + "," + totalDelay + "," + cluster;
   }
 }

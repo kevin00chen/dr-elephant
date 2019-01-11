@@ -97,6 +97,7 @@ public class Application extends Controller {
   public static final String FLOW_DEF_ID = "flow-def-id";
   public static final String FLOW_EXEC_ID = "flow-exec-id";
   public static final String JOB_DEF_ID = "job-def-id";
+  public static final String CLUSTERS = "clusters";
   public static final String USERNAME = "username";
   public static final String QUEUE_NAME = "queue-name";
   public static final String SEVERITY = "severity";
@@ -355,6 +356,7 @@ public class Application extends Controller {
     searchParams.put(FINISHED_TIME_END, form.get(FINISHED_TIME_END));
     searchParams.put(STARTED_TIME_BEGIN, form.get(STARTED_TIME_BEGIN));
     searchParams.put(STARTED_TIME_END, form.get(STARTED_TIME_END));
+    searchParams.put(CLUSTERS, form.get(CLUSTERS));
 
     return searchParams;
   }
@@ -385,6 +387,12 @@ public class Application extends Controller {
     String jobType = searchParams.get(JOB_TYPE);
     if (Utils.isSet(jobType)) {
       query = query.eq(AppResult.TABLE.JOB_TYPE, jobType);
+    }
+    String cluster = searchParams.get(CLUSTERS);
+    if (Utils.isSet(cluster)) {
+      if (!"ALL".equals(cluster)) {
+        query = query.eq(AppResult.TABLE.CLUSTER, cluster);
+      }
     }
     String severity = searchParams.get(SEVERITY);
     if (Utils.isSet(severity)) {

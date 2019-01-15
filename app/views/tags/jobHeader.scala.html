@@ -29,11 +29,11 @@
 <p class="list-group-item-heading">
   <div class="left"><h4 class="list-group-item-heading">[@result.username] [@result.jobType] @result.id</h4></div>
   <div id="time_@result.id" class="right"></div>
-  <div class="left">@result.name</div>
+  <div class="left" style="width: 70%">@result.name</div>
   <div class="right">集群: [@result.cluster] </div>
 </p>
 
 <script type="text/javascript">
-  var ts = new Date(@result.finishTime);
+  var ts = new Date(@result.finishTime).format("yyyy-MM-dd hh:mm:ss");
   document.getElementById("time_@result.id").innerHTML = ts.toString();
 </script>

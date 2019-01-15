@@ -74,15 +74,15 @@ class StagesHeuristic(private val heuristicConfigurationData: HeuristicConfigura
       f"stage ${stageData.stageId}, attempt ${stageData.attemptId} (runtime: ${Statistics.readableTimespan(runtime)})"
 
     val resultDetails = Seq(
-      new HeuristicResultDetails("Spark completed stages count", evaluator.numCompletedStages.toString),
-      new HeuristicResultDetails("Spark failed stages count", evaluator.numFailedStages.toString),
-      new HeuristicResultDetails("Spark stage failure rate", f"${evaluator.stageFailureRate.getOrElse(0.0D)}%.3f"),
+      new HeuristicResultDetails("Spark完成stages总数", evaluator.numCompletedStages.toString),
+      new HeuristicResultDetails("Spark失败stages总数", evaluator.numFailedStages.toString),
+      new HeuristicResultDetails("Spark stage失败率", f"${evaluator.stageFailureRate.getOrElse(0.0D)}%.3f"),
       new HeuristicResultDetails(
-        "Spark stages with high task failure rates",
+        "Task失败率高的stages列表",
         formatStagesWithHighTaskFailureRates(evaluator.stagesWithHighTaskFailureRates)
       ),
       new HeuristicResultDetails(
-        "Spark stages with long average executor runtimes",
+        "耗时较长的Stage列表",
         formatStagesWithLongAverageExecutorRuntimes(evaluator.stagesWithLongAverageExecutorRuntimes)
       )
     )

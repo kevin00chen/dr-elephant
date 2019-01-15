@@ -46,18 +46,18 @@ class ExecutorGcHeuristic(private val heuristicConfigurationData: HeuristicConfi
   override def apply(data: SparkApplicationData): HeuristicResult = {
     val evaluator = new Evaluator(this, data)
     var resultDetails = Seq(
-      new HeuristicResultDetails("GC time to Executor Run time ratio", evaluator.ratio.toString),
-      new HeuristicResultDetails("Total GC time", evaluator.jvmTime.toString),
-      new HeuristicResultDetails("Total Executor Runtime", evaluator.executorRunTimeTotal.toString)
+      new HeuristicResultDetails("GC耗时占Executor运行时间的比例", evaluator.ratio.toString),
+      new HeuristicResultDetails("总GC时间", evaluator.jvmTime.toString),
+      new HeuristicResultDetails("Executor运行总时间", evaluator.executorRunTimeTotal.toString)
     )
 
     //adding recommendations to the result, severityTimeA corresponds to the ascending severity calculation
     if (evaluator.severityTimeA.getValue > Severity.LOW.getValue) {
-      resultDetails = resultDetails :+ new HeuristicResultDetails("Gc ratio high", "The job is spending too much time on GC. We recommend increasing the executor memory.")
+      resultDetails = resultDetails :+ new HeuristicResultDetails("Gc耗时比例过高", "T当前Job的GC耗时多，可以考虑提高Executor内存。")
     }
     //severityTimeD corresponds to the descending severity calculation
     if (evaluator.severityTimeD.getValue > Severity.LOW.getValue) {
-      resultDetails = resultDetails :+ new HeuristicResultDetails("Gc ratio low", "The job is spending too less time in GC. Please check if you have asked for more executor memory than required.")
+      resultDetails = resultDetails :+ new HeuristicResultDetails("Gc耗时比例过低", "当前Job的GC耗时少，可以检查一下是否Executor申请的内存过多。")
     }
 
     val result = new HeuristicResult(

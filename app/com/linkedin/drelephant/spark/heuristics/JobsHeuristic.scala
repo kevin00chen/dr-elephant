@@ -61,12 +61,12 @@ class JobsHeuristic(private val heuristicConfigurationData: HeuristicConfigurati
       f"job ${jobData.jobId}, ${jobData.name} (task failure rate: ${taskFailureRate}%1.3f)"
 
     val resultDetails = Seq(
-      new HeuristicResultDetails("Spark completed jobs count", evaluator.numCompletedJobs.toString),
-      new HeuristicResultDetails("Spark failed jobs count", evaluator.numFailedJobs.toString),
-      new HeuristicResultDetails("Spark failed jobs list", formatFailedJobs(evaluator.failedJobs)),
-      new HeuristicResultDetails("Spark job failure rate", f"${evaluator.jobFailureRate.getOrElse(0.0D)}%.3f"),
+      new HeuristicResultDetails("Spark完成jobs总数", evaluator.numCompletedJobs.toString),
+      new HeuristicResultDetails("Spark失败jobs总数", evaluator.numFailedJobs.toString),
+      new HeuristicResultDetails("Spark失败jobs列表", formatFailedJobs(evaluator.failedJobs)),
+      new HeuristicResultDetails("Spark job失败率", f"${evaluator.jobFailureRate.getOrElse(0.0D)}%.3f"),
       new HeuristicResultDetails(
-        "Spark jobs with high task failure rates",
+        "Task失败率高的Jobs列表",
         formatJobsWithHighTaskFailureRates(evaluator.jobsWithHighTaskFailureRates)
       )
     )

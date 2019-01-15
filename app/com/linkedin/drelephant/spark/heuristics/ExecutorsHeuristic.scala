@@ -77,39 +77,39 @@ class ExecutorsHeuristic(private val heuristicConfigurationData: HeuristicConfig
 
     val resultDetails = Seq(
       new HeuristicResultDetails(
-        "Total executor storage memory allocated",
+        "Executor storage内存分配量",
         MemoryFormatUtils.bytesToString(evaluator.totalStorageMemoryAllocated)
       ),
       new HeuristicResultDetails(
-        "Total executor storage memory used",
+        "Executor storage内存使用量",
         MemoryFormatUtils.bytesToString(evaluator.totalStorageMemoryUsed)
       ),
       new HeuristicResultDetails(
-        "Executor storage memory utilization rate",
+        "Executor storage内存利用率",
         f"${evaluator.storageMemoryUtilizationRate}%1.3f"
       ),
       new HeuristicResultDetails(
-        "Executor storage memory used distribution",
+        "Executor storage内存使用统计",
         formatDistributionBytes(evaluator.storageMemoryUsedDistribution)
       ),
       new HeuristicResultDetails(
-        "Executor task time distribution",
+        "Executor task耗时统计",
         formatDistributionDuration(evaluator.taskTimeDistribution)
       ),
       new HeuristicResultDetails(
-        "Executor task time sum",
+        "Executor task总耗时",
         (evaluator.totalTaskTime / Statistics.SECOND_IN_MS).toString
       ),
       new HeuristicResultDetails(
-        "Executor input bytes distribution",
+        "Executor读入bytes统计",
         formatDistributionBytes(evaluator.inputBytesDistribution)
       ),
       new HeuristicResultDetails(
-        "Executor shuffle read bytes distribution",
+        "Executor shuffle读入bytes统计",
         formatDistributionBytes(evaluator.shuffleReadBytesDistribution)
       ),
       new HeuristicResultDetails(
-        "Executor shuffle write bytes distribution",
+        "Executor shuffle写出bytes统计",
         formatDistributionBytes(evaluator.shuffleWriteBytesDistribution)
       )
     )

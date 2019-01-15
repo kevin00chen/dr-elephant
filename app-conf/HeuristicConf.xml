@@ -325,25 +325,25 @@
 
   <heuristic>
     <applicationtype>spark</applicationtype>
-    <heuristicname>Spark Configuration</heuristicname>
+    <heuristicname>Spark任务参数</heuristicname>
     <classname>com.linkedin.drelephant.spark.heuristics.ConfigurationHeuristic</classname>
     <viewname>views.html.help.spark.helpConfigurationHeuristic</viewname>
   </heuristic>
   <heuristic>
     <applicationtype>spark</applicationtype>
-    <heuristicname>Spark Executor Metrics</heuristicname>
+    <heuristicname>Spark Executor分析</heuristicname>
     <classname>com.linkedin.drelephant.spark.heuristics.ExecutorsHeuristic</classname>
     <viewname>views.html.help.spark.helpExecutorsHeuristic</viewname>
   </heuristic>
   <heuristic>
     <applicationtype>spark</applicationtype>
-    <heuristicname>Spark Job Metrics</heuristicname>
+    <heuristicname>Spark Job相关</heuristicname>
     <classname>com.linkedin.drelephant.spark.heuristics.JobsHeuristic</classname>
     <viewname>views.html.help.spark.helpJobsHeuristic</viewname>
   </heuristic>
   <heuristic>
     <applicationtype>spark</applicationtype>
-    <heuristicname>Spark Stage Metrics</heuristicname>
+    <heuristicname>Spark Stage分析</heuristicname>
     <classname>com.linkedin.drelephant.spark.heuristics.StagesHeuristic</classname>
     <viewname>views.html.help.spark.helpStagesHeuristic</viewname>
   </heuristic>

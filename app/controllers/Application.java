@@ -100,6 +100,7 @@ public class Application extends Controller {
   public static final String CLUSTERS = "clusters";
   public static final String USERNAME = "username";
   public static final String QUEUE_NAME = "queue-name";
+  public static final String RESOURCE_USED = "rs-used";
   public static final String SEVERITY = "severity";
   public static final String JOB_TYPE = "job-type";
   public static final String ANALYSIS = "analysis";
@@ -346,8 +347,10 @@ public class Application extends Controller {
     username = username != null ? username.trim().toLowerCase() : null;
     searchParams.put(USERNAME, username);
     String queuename = form.get(QUEUE_NAME);
+    String resourceUsed = form.get(RESOURCE_USED);
     queuename = queuename != null ? queuename.trim().toLowerCase() : null;
     searchParams.put(QUEUE_NAME, queuename);
+    searchParams.put(RESOURCE_USED, resourceUsed);
     searchParams.put(SEVERITY, form.get(SEVERITY));
     searchParams.put(JOB_TYPE, form.get(JOB_TYPE));
     searchParams.put(ANALYSIS, form.get(ANALYSIS));
@@ -382,6 +385,10 @@ public class Application extends Controller {
     String queuename = searchParams.get(QUEUE_NAME);
     if (Utils.isSet(queuename)) {
       query = query.eq(AppResult.TABLE.QUEUE_NAME, queuename);
+    }
+    String resourceUsed = searchParams.get(RESOURCE_USED);
+    if (Utils.isSet(resourceUsed)) {
+      query = query.ge(AppResult.TABLE.RESOURCE_USAGE, Utils.getResourceInMBSeconds(resourceUsed));
     }
     String jobType = searchParams.get(JOB_TYPE);
     if (Utils.isSet(jobType)) {

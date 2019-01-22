@@ -24,6 +24,7 @@ $(document).ready(function(){
   var jobDefId = $("#form-job-def-id");
   var user = $("#form-username");
   var queueName = $("#form-queue-name");
+  var resourceUsed = $("#form-rs-used");
   var jobtypeEnable = $("#form-job-type-enable");
   var jobtype = $("#form-job-type");
   var clustersEnable = $("#form-clusters-enable");
@@ -52,6 +53,7 @@ $(document).ready(function(){
       flowExecId.prop('disabled', true);
       user.prop('disabled', true);
       queueName.prop('disabled', true);
+      resourceUsed.prop('disabled', true);
       severity.prop('disabled', true);
       analysis.prop('disabled', true);
       jobtype.prop('disabled', true);
@@ -67,6 +69,7 @@ $(document).ready(function(){
       jobDefId.prop('disabled', true);
       user.prop('disabled', true);
       queueName.prop('disabled', true);
+      resourceUsed.prop('disabled', true);
       severity.prop('disabled', true);
       analysis.prop('disabled', true);
       jobtype.prop('disabled', true);
@@ -82,6 +85,7 @@ $(document).ready(function(){
       flowExecId.prop('disabled', true);
       user.prop('disabled', true);
       queueName.prop('disabled', true);
+      resourceUsed.prop('disabled', true);
       severity.prop('disabled', true);
       analysis.prop('disabled', true);
       jobtype.prop('disabled', true);
@@ -103,6 +107,7 @@ $(document).ready(function(){
       datetimeEnable.prop('disabled', false);
       user.prop('disabled', false);
       queueName.prop('disabled', false);
+      resourceUsed.prop('disabled', false);
       if(jobtypeEnable.prop('checked')){
         jobtype.prop('disabled', false);
       }

@@ -311,6 +311,19 @@ public final class Utils {
     return GBHoursString;
   }
 
+
+  public static long getResourceInMBSeconds(String resourceUsed) {
+    long result = 0;
+    try {
+      result = (long) (Double.parseDouble(resourceUsed) * FileUtils.ONE_KB * Statistics.HOUR);
+      if (result < 0)
+        result = 0;
+    } catch (Exception e) {
+      // DO NOTHING
+    }
+    return result;
+  }
+
   /**
    * Find percentage of numerator of denominator
    * @param numerator The numerator

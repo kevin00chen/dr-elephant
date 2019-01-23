@@ -133,5 +133,5 @@ public class AirflowScheduler implements Scheduler {
   }
 
   @Override
-  public String getJobName() { return _taskId; }
+  public String getJobName() { return Utils.formatStringOrNull("%s_%s", _taskId, _taskInstanceExecutionDate); }
 }

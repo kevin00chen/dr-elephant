@@ -94,7 +94,6 @@ public class MapReduceFSFetcherHadoop2 extends MapReduceFetcher {
       Utils.setClusterConf(conf, fetcherConfData.getParamsToCluster().get(clusterName));
       try {
         URI uri = new URI("hdfs://" + conf.get("dfs.namenode.rpc-address") + this._historyLocation);
-//        URI uri = new URI(this._historyLocation);
         clusterToFs.put(clusterName, FileSystem.get(uri, conf));
       } catch( URISyntaxException ex) {
         clusterToFs.put(clusterName, FileSystem.get(conf));

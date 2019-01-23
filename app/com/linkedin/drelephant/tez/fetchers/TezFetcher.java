@@ -45,34 +45,32 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
 
   private URLFactory _urlFactory;
   private JSONFactory _jsonFactory;
-  private String _timelineWebAddr;
-
-  private FetcherConfigurationData _fetcherConfigurationData;
-
-
+  private Map<String, String> _clusterTimelineWebAddr = new HashMap<String, String>();
 
   public TezFetcher(FetcherConfigurationData fetcherConfData) throws IOException {
-    this._fetcherConfigurationData = fetcherConfData;
-    final String applicationHistoryAddr = new Configuration().get(TIMELINE_SERVER_URL);
+    Map<String, Map<String, String>> clusterParams = fetcherConfData.getParamsToCluster();
 
-    //Connection validity checked using method verifyURL(_timelineWebAddr) inside URLFactory constructor;
-    _urlFactory = new URLFactory(applicationHistoryAddr);
-    logger.info("Connection success.");
+    for (String cluster : clusterParams.keySet()) {
+      String applicationHistoryAddr = clusterParams.get(cluster).get(TIMELINE_SERVER_URL);
+      logger.info("Connection to " + cluster + " success.");
+      _clusterTimelineWebAddr.put(cluster, "http://" + applicationHistoryAddr + "/ws/v1/timeline/");
+    }
+
+    _urlFactory = new URLFactory(_clusterTimelineWebAddr);
 
     _jsonFactory = new JSONFactory();
-    _timelineWebAddr = "http://" + _timelineWebAddr + "/ws/v1/timeline/";
-
   }
 
   public TezApplicationData fetchData(AnalyticJob analyticJob) throws IOException, AuthenticationException {
 
     int maxSize = 0;
     String appId = analyticJob.getAppId();
+    String cluster = analyticJob.getClusterName();
     TezApplicationData jobData = new TezApplicationData();
     jobData.setAppId(appId);
-    Properties jobConf = _jsonFactory.getProperties(_urlFactory.getApplicationURL(appId));
+    Properties jobConf = _jsonFactory.getProperties(_urlFactory.getApplicationURL(cluster, appId));
     jobData.setConf(jobConf);
-    URL dagIdsUrl = _urlFactory.getDagURLByTezApplicationId(appId);
+    URL dagIdsUrl = _urlFactory.getDagURLByTezApplicationId(cluster, appId);
 
     List<String> dagIdsByApplicationId = _jsonFactory.getDagIdsByApplicationId(dagIdsUrl);
 
@@ -85,7 +83,7 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
       try {
         //set job task independent properties
 
-        URL dagUrl = _urlFactory.getDagURL(dagId);
+        URL dagUrl = _urlFactory.getDagURL(cluster, dagId);
         String state = _jsonFactory.getState(dagUrl);
 
         jobData.setStartTime(_jsonFactory.getDagStartTime(dagUrl));
@@ -99,8 +97,8 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
           List<TezTaskData> scopeTaskList = new ArrayList<TezTaskData>();
 
           // Fetch task data
-          URL vertexListUrl = _urlFactory.getVertexListURL(dagId);
-          _jsonFactory.getTaskDataAll(vertexListUrl, dagId, mapperList, reducerList, scopeTaskList);
+          URL vertexListUrl = _urlFactory.getVertexListURL(cluster, dagId);
+          _jsonFactory.getTaskDataAll(vertexListUrl, cluster, dagId, mapperList, reducerList, scopeTaskList);
 
           if(mapperList.size() + reducerList.size() + scopeTaskList.size() > maxSize){
             mapperListAggregate = mapperList;
@@ -122,73 +120,65 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
     TezTaskData[] reducerData = reducerListAggregate.toArray(new TezTaskData[reducerListAggregate.size()]);
     TezTaskData[] scopeTaskData = scopeListAggregate.toArray(new TezTaskData[scopeListAggregate.size()]);
 
-    TezCounterData dagCounter = _jsonFactory.getDagCounter(_urlFactory.getDagURL(_jsonFactory.getDagIdsByApplicationId(dagIdsUrl).get(0)));
+    TezCounterData dagCounter = _jsonFactory.getDagCounter(_urlFactory.getDagURL(cluster, _jsonFactory.getDagIdsByApplicationId(dagIdsUrl).get(0)));
 
     jobData.setCounters(dagCounter).setMapTaskData(mapperData).setReduceTaskData(reducerData).setScopeTasks(scopeTaskData);
 
     return jobData;
   }
 
-  private URL getTaskListByVertexURL(String dagId, String vertexId) throws MalformedURLException {
-    return _urlFactory.getTaskListByVertexURL(dagId, vertexId);
+  private URL getTaskListByVertexURL(String cluster, String dagId, String vertexId) throws MalformedURLException {
+    return _urlFactory.getTaskListByVertexURL(cluster, dagId, vertexId);
   }
 
-  private URL getTaskURL(String taskId) throws MalformedURLException {
-    return _urlFactory.getTasksURL(taskId);
+  private URL getTaskURL(String cluster, String taskId) throws MalformedURLException {
+    return _urlFactory.getTasksURL(cluster, taskId);
   }
 
-  private URL getTaskAttemptURL(String dagId, String taskId, String attemptId) throws MalformedURLException {
-    return _urlFactory.getTaskAttemptURL(dagId, taskId, attemptId);
+  private URL getTaskAttemptURL(String cluster, String dagId, String taskId, String attemptId) throws MalformedURLException {
+    return _urlFactory.getTaskAttemptURL(cluster, dagId, taskId, attemptId);
   }
 
   private class URLFactory {
 
-    private String _timelineWebAddr;
+    private Map<String, String> _timelineWebAddrMap;
 
-    private URLFactory(String hserverAddr) throws IOException {
-      _timelineWebAddr = "http://" + hserverAddr + "/ws/v1/timeline";
-      verifyURL(_timelineWebAddr);
+    private URLFactory(Map<String, String> hserverAddrMap) throws IOException {
+      _timelineWebAddrMap = hserverAddrMap;
     }
 
-    private void verifyURL(String url) throws IOException {
-      final URLConnection connection = new URL(url).openConnection();
-      // Check service availability
-      connection.connect();
-      return;
+    private URL getDagURLByTezApplicationId(String cluster, String applicationId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_DAG_ID?primaryFilter=applicationId:" + applicationId);
     }
 
-    private URL getDagURLByTezApplicationId(String applicationId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_DAG_ID?primaryFilter=applicationId:" + applicationId);
+    private URL getApplicationURL(String cluster, String applicationId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_APPLICATION/tez_" + applicationId);
     }
 
-    private URL getApplicationURL(String applicationId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_APPLICATION/tez_" + applicationId);
+    private URL getDagURL(String cluster, String dagId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_DAG_ID/" + dagId);
     }
 
-    private URL getDagURL(String dagId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_DAG_ID/" + dagId);
+    private URL getVertexListURL(String cluster, String dagId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_VERTEX_ID?primaryFilter=TEZ_DAG_ID:" + dagId);
     }
 
-    private URL getVertexListURL(String dagId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_VERTEX_ID?primaryFilter=TEZ_DAG_ID:" + dagId);
-    }
-
-    private URL getTaskListByVertexURL(String dagId, String vertexId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_TASK_ID?primaryFilter=TEZ_DAG_ID:" + dagId +
+    private URL getTaskListByVertexURL(String cluster, String dagId, String vertexId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_TASK_ID?primaryFilter=TEZ_DAG_ID:" + dagId +
               "&secondaryFilter=TEZ_VERTEX_ID:" + vertexId + "&limit=500000");
     }
 
-    private URL getTasksURL(String taskId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_TASK_ID/" + taskId);
+    private URL getTasksURL(String cluster, String taskId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_TASK_ID/" + taskId);
     }
 
-    private URL getTaskAllAttemptsURL(String dagId, String taskId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_TASK_ATTEMPT_ID?primaryFilter=TEZ_DAG_ID:" + dagId +
+    private URL getTaskAllAttemptsURL(String cluster, String dagId, String taskId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_TASK_ATTEMPT_ID?primaryFilter=TEZ_DAG_ID:" + dagId +
               "&secondaryFilter=TEZ_TASK_ID:" + taskId);
     }
 
-    private URL getTaskAttemptURL(String dagId, String taskId, String attemptId) throws MalformedURLException {
-      return new URL(_timelineWebAddr + "/TEZ_TASK_ATTEMPT_ID/" + attemptId);
+    private URL getTaskAttemptURL(String cluster, String dagId, String taskId, String attemptId) throws MalformedURLException {
+      return new URL(_timelineWebAddrMap.get(cluster) + "TEZ_TASK_ATTEMPT_ID/" + attemptId);
     }
 
   }
@@ -260,7 +250,7 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
       return endTime;
     }
 
-    private void getTaskDataAll(URL vertexListUrl, String dagId, List<TezTaskData> mapperList,
+    private void getTaskDataAll(URL vertexListUrl, String cluster, String dagId, List<TezTaskData> mapperList,
                                 List<TezTaskData> reducerList, List<TezTaskData> scopeTaskList) throws IOException, AuthenticationException {
 
       JsonNode rootVertexNode = ThreadContextMR2.readJsonNode(vertexListUrl);
@@ -270,24 +260,24 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
       for (JsonNode vertex : vertices) {
         String vertexId = vertex.get("entity").getTextValue();
         String vertexClass = vertex.path("otherinfo").path("processorClassName").getTextValue();
-        URL tasksByVertexURL = getTaskListByVertexURL(dagId, vertexId);
+        URL tasksByVertexURL = getTaskListByVertexURL(cluster, dagId, vertexId);
         if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.MapTezProcessor")) {
           isMapVertex = true;
-          getTaskDataByVertexId(tasksByVertexURL, dagId, vertexId, mapperList,isMapVertex);
+          getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, mapperList,isMapVertex);
         }
         else if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.ReduceTezProcessor")) {
           isMapVertex = false;
-          getTaskDataByVertexId(tasksByVertexURL, dagId, vertexId, reducerList, isMapVertex);
+          getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, reducerList, isMapVertex);
         }
         else if (vertexClass.equals("org.apache.pig.backend.hadoop.executionengine.tez.runtime.PigProcessor")) {
           isMapVertex = false;
-          getTaskDataByVertexId(tasksByVertexURL, dagId, vertexId, scopeTaskList, isMapVertex);
+          getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, scopeTaskList, isMapVertex);
         }
 
       }
     }
 
-    private void getTaskDataByVertexId(URL url, String dagId, String vertexId, List<TezTaskData> taskList,
+    private void getTaskDataByVertexId(URL url, String cluster, String dagId, String vertexId, List<TezTaskData> taskList,
                                        boolean isMapTask) throws IOException, AuthenticationException {
 
       JsonNode rootNode = ThreadContextMR2.readJsonNode(url);
@@ -300,7 +290,7 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
           attemptId = task.path("otherinfo").path("successfulAttemptId").getTextValue();
         }
         else{
-          JsonNode firstAttempt = getTaskFirstFailedAttempt(_urlFactory.getTaskAllAttemptsURL(dagId,taskId));
+          JsonNode firstAttempt = getTaskFirstFailedAttempt(_urlFactory.getTaskAllAttemptsURL(cluster, dagId,taskId));
           if(firstAttempt != null){
             attemptId = firstAttempt.get("entity").getTextValue();
           }
@@ -309,7 +299,7 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
         taskList.add(new TezTaskData(taskId, attemptId));
       }
 
-      getTaskData(dagId, taskList, isMapTask);
+      getTaskData(cluster, dagId, taskList, isMapTask);
 
     }
 
@@ -334,15 +324,15 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
 
 
 
-    private void getTaskData(String dagId, List<TezTaskData> taskList, boolean isMapTask)
+    private void getTaskData(String cluster, String dagId, List<TezTaskData> taskList, boolean isMapTask)
             throws IOException, AuthenticationException {
 
       for(int i=0; i<taskList.size(); i++) {
         TezTaskData data = taskList.get(i);
-        URL taskCounterURL = getTaskURL(data.getTaskId());
+        URL taskCounterURL = getTaskURL(cluster, data.getTaskId());
         TezCounterData taskCounter = getTaskCounter(taskCounterURL);
 
-        URL taskAttemptURL = getTaskAttemptURL(dagId, data.getTaskId(), data.getAttemptId());
+        URL taskAttemptURL = getTaskAttemptURL(cluster, dagId, data.getTaskId(), data.getAttemptId());
         long[] taskExecTime = getTaskExecTime(taskAttemptURL, isMapTask);
 
         data.setCounter(taskCounter);

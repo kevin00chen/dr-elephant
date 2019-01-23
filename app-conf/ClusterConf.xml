@@ -32,6 +32,7 @@
     <name>Data-Hive-ETL</name>
     <params>
       <yarn.resourcemanager.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>
+      <yarn.timeline-service.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8188</yarn.timeline-service.webapp.address>
       <dfs.namenode.rpc-address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>
       <mapreduce.jobhistory.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:19888</mapreduce.jobhistory.webapp.address>
     </params>

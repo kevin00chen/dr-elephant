@@ -61,8 +61,8 @@ public class TestElephantFetcher {
     try {
       Configuration conf = new Configuration();
       conf.set("yarn.resourcemanager.ha.enabled", "false");
-      conf.set("yarn.resourcemanager.webapp.address", "ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8088");
-      conf.set("drelephant.analysis.fetch.initial.windowMillis", 24 * 60 * 60 * 1000 + "");
+      conf.set("yarn.resourcemanager.webapp.address", "ec2-54-222-151-203.cn-north-1.compute.amazonaws.com.cn:8088");
+      conf.set("drelephant.analysis.fetch.initial.windowMillis", 1 * 60 * 60 * 1000 + "");
       _analyticJobGenerator.configure(conf);
     } catch (Exception e) {
       logger.error("Error occurred when configuring the analysis provider.", e);
@@ -115,6 +115,7 @@ public class TestElephantFetcher {
   public void analyzeSparkJob(List<AnalyticJob> todos) throws Exception {
     List<AnalyticJob> sparkJobs = new ArrayList<AnalyticJob>();
     List<AnalyticJob> mrJobs = new ArrayList<AnalyticJob>();
+    List<AnalyticJob> tezJobs = new ArrayList<AnalyticJob>();
     for (AnalyticJob analyticJob : todos) {
       String type = analyticJob.getAppType().getName();
       System.out.println("type = " + type);
@@ -122,21 +123,30 @@ public class TestElephantFetcher {
         sparkJobs.add(analyticJob);
       } else if (type.equals("MAPREDUCE")) {
         mrJobs.add(analyticJob);
+      } else if (type.equals("TEZ")) {
+        tezJobs.add(analyticJob);
       }
     }
 
-    for (AnalyticJob analyticJob : sparkJobs) {
-      System.out.println("获取Spark任务数据");
-
-      ExecutorJob executorJob = new ExecutorJob(analyticJob);
-      executorJob.run();
-    }
+//    for (AnalyticJob analyticJob : sparkJobs) {
+//      System.out.println("获取Spark任务数据");
+//
+//      ExecutorJob executorJob = new ExecutorJob(analyticJob);
+//      executorJob.run();
+//    }
 
 //    for (AnalyticJob analyticJob : mrJobs) {
 //      System.out.println("获取MR任务数据");
 //      ExecutorJob executorJob = new ExecutorJob(analyticJob);
 //      executorJob.run();
 //    }
+
+    for (AnalyticJob analyticJob : tezJobs) {
+      System.out.println("获取TEZ任务数据");
+
+      ExecutorJob executorJob = new ExecutorJob(analyticJob);
+      executorJob.run();
+    }
 
     System.out.println();
 

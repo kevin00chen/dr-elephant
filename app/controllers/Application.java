@@ -258,6 +258,8 @@ public class Application extends Controller {
 
         result.yarnAppHeuristicResults = r2;
         return ok(searchPage.render(null, jobDetails.render(result)));
+      } else {
+        return ok(searchPage.render(null, jobDetails.render(null)));
       }
     } else if (Utils.isSet(partialFlowExecId)) {
       IdUrlPair flowExecPair = bestSchedulerInfoMatchGivenPartialId(partialFlowExecId, AppResult.TABLE.FLOW_EXEC_ID);

@@ -595,10 +595,19 @@ public final class Utils {
   }
 
   public static void setClusterConf(Configuration conf, Map<String, String> params) {
-//    conf.addResource("/Users/chenkaiming/Documents/xiaohongshu/env/hive-etl-conf/hadoop_conf/core-site.xml");
-//    conf.addResource("/Users/chenkaiming/Documents/xiaohongshu/env/hive-etl-conf/hadoop_conf/hdfs-site.xml");
     for (String key : params.keySet()) {
       conf.set(key, params.get(key));
     }
+  }
+
+  public static String formatAirflowStr(String str) {
+    String result = str;
+    if (str.startsWith("scheduled__")) {
+      result = result.replace("scheduled__", "");
+    }
+    if (result.contains("+")) {
+      result = result.split("\\+")[0];
+    }
+    return result;
   }
 }

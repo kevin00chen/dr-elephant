@@ -33,7 +33,7 @@ public class AirflowScheduler implements Scheduler {
   public static final String AIRFLOW_TASK_ID = "airflow.ctx.task.task_id";
   public static final String AIRFLOW_TASK_INSTANCE_EXECUTION_DATE = "airflow.ctx.task_instance.execution_date";
   public static final String AIRFLOW_DAG_ID = "airflow.ctx.dag.dag_id";
-  public static final String AIRFLOW_DAG_RUN_EXECUTION_DATE = "airflow.ctx.dag_run.execution_date";
+  public static final String AIRFLOW_DAG_RUN_EXECUTION_DATE = "airflow.ctx.dag_run.run_id";
 
   public static final String AIRFLOW_BASE_URL_PARAM_NAME = "airflowbaseurl";
   private static final String AIRFLOW_BASE_URL_DEFAULT = "http://localhost:8000";
@@ -66,11 +66,11 @@ public class AirflowScheduler implements Scheduler {
     // my_amazing_task_id
     _taskId = properties.getProperty(AIRFLOW_TASK_ID);
     // 2016-06-27T01:30:00
-    _taskInstanceExecutionDate = properties.getProperty(AIRFLOW_TASK_INSTANCE_EXECUTION_DATE);
+    _taskInstanceExecutionDate = Utils.formatAirflowStr(properties.getProperty(AIRFLOW_TASK_INSTANCE_EXECUTION_DATE));
     // my_amazing_dag_id
     _dagId = properties.getProperty(AIRFLOW_DAG_ID); //
     // 2016-06-27T00:00:00
-    _dagRunExecutionDate = properties.getProperty(AIRFLOW_DAG_RUN_EXECUTION_DATE);
+    _dagRunExecutionDate = Utils.formatAirflowStr(properties.getProperty(AIRFLOW_DAG_RUN_EXECUTION_DATE));
 
     _subdagDepth = 0; // TODO: Add sub-dag support
   }

@@ -602,12 +602,16 @@ public final class Utils {
 
   public static String formatAirflowStr(String str) {
     String result = str;
-    if (str.startsWith("scheduled__")) {
-      result = result.replace("scheduled__", "");
+    if (result == null) {
+      return null;
+    } else {
+      if (str.startsWith("scheduled__")) {
+        result = result.replace("scheduled__", "");
+      }
+      if (result.contains("+")) {
+        result = result.split("\\+")[0];
+      }
+      return result;
     }
-    if (result.contains("+")) {
-      result = result.split("\\+")[0];
-    }
-    return result;
   }
 }

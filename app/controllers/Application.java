@@ -276,7 +276,7 @@ public class Application extends Controller {
           .select(AppResult.getSearchFields() + "," + AppResult.TABLE.JOB_DEF_ID)
           .fetch(AppResult.TABLE.APP_HEURISTIC_RESULTS, AppHeuristicResult.getSearchFields())
           .where()
-          .eq(AppResult.TABLE.JOB_DEF_ID, jobDefId)
+          .like(AppResult.TABLE.JOB_DEF_ID, "%" + jobDefId + "%")
           .findList();
       Map<IdUrlPair, List<AppResult>> map = ControllerUtil.groupJobs(results, ControllerUtil.GroupBy.FLOW_EXECUTION_ID);
 

@@ -62,7 +62,7 @@ public class TestElephantFetcher {
       Configuration conf = new Configuration();
       conf.set("yarn.resourcemanager.ha.enabled", "false");
       conf.set("yarn.resourcemanager.webapp.address", "ec2-54-222-151-203.cn-north-1.compute.amazonaws.com.cn:8088");
-      conf.set("drelephant.analysis.fetch.initial.windowMillis", 1 * 60 * 60 * 1000 + "");
+      conf.set("drelephant.analysis.fetch.initial.windowMillis", 2 * 60 * 60 * 1000 + "");
       _analyticJobGenerator.configure(conf);
     } catch (Exception e) {
       logger.error("Error occurred when configuring the analysis provider.", e);
@@ -83,7 +83,7 @@ public class TestElephantFetcher {
         long analysisStartTimeMillis = System.currentTimeMillis();
         logger.info(String.format("Analyzing %s", analysisName));
         AppResult result = _analyticJob.getAnalysis();
-        result.save();
+//        result.save();
         long processingTime = System.currentTimeMillis() - analysisStartTimeMillis;
         logger.info(String.format("Analysis of %s took %sms", analysisName, processingTime));
         MetricsController.setJobProcessingTime(processingTime);
@@ -97,6 +97,26 @@ public class TestElephantFetcher {
     }
   }
 
+
+  private Map<String, Map<String, String>> loadClusterConfigs() {
+    Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
+    Document document = Utils.loadXMLDoc("/Users/chenkaiming/files/workspace/apache/dr-elephant/app-conf/ClusterConf.xml");
+    ClusterConfiguration conf = new ClusterConfiguration(document.getDocumentElement());
+    for (ClusterConfigurationData confData : conf.getClustersConfDataList()) {
+      result.put(confData.getClusterName(), confData.getClusterParams());
+    }
+    return result;
+  }
+
+  private Map<String, Map<String, String>> loadClusterConfigs2() {
+    Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
+    Document document = Utils.loadXMLDoc("/Users/chenkaiming/files/workspace/apache/dr-elephant/app-conf/ClusterConf.xml");
+    ClusterConfiguration conf = new ClusterConfiguration(document.getDocumentElement());
+    for (ClusterConfigurationData confData : conf.getClustersConfDataList()) {
+      result.put(confData.getClusterName(), confData.getClusterParams());
+    }
+    return result;
+  }
 
 
   public static void main(String[] args) throws Exception {
@@ -117,6 +137,10 @@ public class TestElephantFetcher {
     List<AnalyticJob> mrJobs = new ArrayList<AnalyticJob>();
     List<AnalyticJob> tezJobs = new ArrayList<AnalyticJob>();
     for (AnalyticJob analyticJob : todos) {
+      if (analyticJob.getAppId().equals("application_1547956051640_33493")) {
+        System.out.println("===");
+      }
+
       String type = analyticJob.getAppType().getName();
       System.out.println("type = " + type);
       if (type.equals("SPARK")) {
@@ -144,8 +168,17 @@ public class TestElephantFetcher {
     for (AnalyticJob analyticJob : tezJobs) {
       System.out.println("获取TEZ任务数据");
 
-      ExecutorJob executorJob = new ExecutorJob(analyticJob);
-      executorJob.run();
+      if (analyticJob.getAppId().equals("application_1547956051640_33724")) {
+        ExecutorJob executorJob = new ExecutorJob(analyticJob);
+        executorJob.run();
+      }
+
+//      if (analyticJob.getElapsedTime() > 1800000) {
+//        System.out.println(analyticJob.getElapsedTime() / 1000 / 60);
+//        ExecutorJob executorJob = new ExecutorJob(analyticJob);
+//        executorJob.run();
+//      }
+
     }
 
     System.out.println();

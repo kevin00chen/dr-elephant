@@ -15,11 +15,19 @@
   the License.
 -->
 
-<!-- 该文件用于配置多个需要监控的集群，主要配置YARN RM地址，HDFS访问地址，如果都是要默认端口，可以只写主机名公有IP，但是需要多一个<common-port/>标签
+<!-- 该文件用于配置需要监控的集群信息，必须配置项
+      1、YARN RM地址
+      2、timeline地址
+      2、HDFS访问地址
+      3、jobhistory地址
+
+      <common-port/>标签用于填写默认端口，只有在<cluster/>标签中写了主机名IP的才会识别公共端口
+      <cluster/>中的<params/>标签覆盖默认值
 
   Example:
   <cluster>
     <name>Data-Hive-ETL</name>
+    <host>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn</host>
     <params>
       <yarn.resourcemanager.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>
       <dfs.namenode.rpc-address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>
@@ -30,20 +38,13 @@
 <clusters>
   <cluster>
     <name>Data-Hive-ETL</name>
-    <params>
-      <yarn.resourcemanager.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>
-      <yarn.timeline-service.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8188</yarn.timeline-service.webapp.address>
-      <dfs.namenode.rpc-address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>
-      <mapreduce.jobhistory.webapp.address>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn:19888</mapreduce.jobhistory.webapp.address>
-    </params>
+    <host>ec2-52-80-160-71.cn-north-1.compute.amazonaws.com.cn</host>
   </cluster>
 
-  <!--<cluster>-->
-    <!--<name>Data-UBT-V2</name>-->
-    <!--<params>-->
-      <!--<yarn.resourcemanager.webapp.address>ec2-52-81-106-158.cn-north-1.compute.amazonaws.com.cn:8088</yarn.resourcemanager.webapp.address>-->
-      <!--<dfs.namenode.rpc-address>ec2-52-81-106-158.cn-north-1.compute.amazonaws.com.cn:8020</dfs.namenode.rpc-address>-->
-      <!--<mapreduce.jobhistory.webapp.address>ec2-52-81-106-158.cn-north-1.compute.amazonaws.com.cn:19888</mapreduce.jobhistory.webapp.address>-->
-    <!--</params>-->
-  <!--</cluster>-->
+  <common-port>
+    <yarn.resourcemanager.webapp.address.port>8088</yarn.resourcemanager.webapp.address.port>
+    <yarn.timeline-service.webapp.address.port>8188</yarn.timeline-service.webapp.address.port>
+    <dfs.namenode.rpc-address.port>8020</dfs.namenode.rpc-address.port>
+    <mapreduce.jobhistory.webapp.address.port>19888</mapreduce.jobhistory.webapp.address.port>
+  </common-port>
 </clusters>

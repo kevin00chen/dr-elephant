@@ -246,7 +246,12 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
 
     private long getDagEndTime(URL url) throws IOException, AuthenticationException {
       JsonNode rootNode = ThreadContextMR2.readJsonNode(url);
-      long endTime = rootNode.path("otherinfo").get("endTime").getLongValue();
+      long endTime = 0l;
+      try {
+        endTime = rootNode.path("otherinfo").get("endTime").getLongValue();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       return endTime;
     }
 
@@ -261,19 +266,20 @@ public class TezFetcher implements ElephantFetcher<TezApplicationData> {
         String vertexId = vertex.get("entity").getTextValue();
         String vertexClass = vertex.path("otherinfo").path("processorClassName").getTextValue();
         URL tasksByVertexURL = getTaskListByVertexURL(cluster, dagId, vertexId);
-        if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.MapTezProcessor")) {
-          isMapVertex = true;
-          getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, mapperList,isMapVertex);
+        if (vertexClass != null) {
+          if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.MapTezProcessor")) {
+            isMapVertex = true;
+            getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, mapperList,isMapVertex);
+          }
+          else if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.ReduceTezProcessor")) {
+            isMapVertex = false;
+            getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, reducerList, isMapVertex);
+          }
+          else if (vertexClass.equals("org.apache.pig.backend.hadoop.executionengine.tez.runtime.PigProcessor")) {
+            isMapVertex = false;
+            getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, scopeTaskList, isMapVertex);
+          }
         }
-        else if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.ReduceTezProcessor")) {
-          isMapVertex = false;
-          getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, reducerList, isMapVertex);
-        }
-        else if (vertexClass.equals("org.apache.pig.backend.hadoop.executionengine.tez.runtime.PigProcessor")) {
-          isMapVertex = false;
-          getTaskDataByVertexId(tasksByVertexURL, cluster, dagId, vertexId, scopeTaskList, isMapVertex);
-        }
-
       }
     }
 

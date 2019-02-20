@@ -313,6 +313,7 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
         String finalStatus = app.get("finalStatus").getValueAsText();
         String clusterName = "Data-Hive-ETL";
         String diagnostics = app.get("diagnostics").getValueAsText();
+        String appTag = app.get("applicationTags").getValueAsText();
 
         long runningContainers = app.get("runningContainers").getLongValue();
         long memorySeconds = app.get("memorySeconds").getLongValue();
@@ -325,7 +326,8 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
           analyticJob.setAppId(appId).setAppType(type).setUser(user).setName(name).setQueueName(queueName)
             .setTrackingUrl(trackingUrl).setStartTime(startTime).setFinishTime(finishTime).setDiagnostics(diagnostics)
             .setApplicationTags(applicationTags).setState(state).setFinalStatus(finalStatus).setClusterName(clusterName)
-            .setRunningContainers(runningContainers).setMemorySeconds(memorySeconds).setVcoreSeconds(vcoreSeconds).setElapsedTime(elapsedTime);
+            .setRunningContainers(runningContainers).setMemorySeconds(memorySeconds).setVcoreSeconds(vcoreSeconds)
+            .setElapsedTime(elapsedTime).setApplicationTags(appTag);
 
           appList.add(analyticJob);
         }
@@ -353,8 +355,8 @@ public class AnalyticJobGeneratorHadoop2 implements AnalyticJobGenerator {
 
       // When called first time after launch, hit the DB and avoid duplicated analytic jobs that have been analyzed
       // before.
-      if (_lastTime > _fetchStartTime || (_lastTime == _fetchStartTime && AppResult.find.byId(appId) == null)) {
-//      if (_lastTime > _fetchStartTime || (_lastTime == _fetchStartTime)) {
+//      if (_lastTime > _fetchStartTime || (_lastTime == _fetchStartTime && AppResult.find.byId(appId) == null)) {
+      if (_lastTime > _fetchStartTime || (_lastTime == _fetchStartTime)) {
         String user = app.get("user").getValueAsText();
         String name = app.get("name").getValueAsText();
         String queueName = app.get("queue").getValueAsText();

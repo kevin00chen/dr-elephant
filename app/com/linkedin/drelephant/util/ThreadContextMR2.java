@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -78,6 +79,10 @@ public final class ThreadContextMR2 {
     public static JsonNode readJsonNode(URL url) throws IOException, AuthenticationException {
         HttpURLConnection conn = _LOCAL_AUTH_URL.get().openConnection(url, _LOCAL_AUTH_TOKEN.get());
         return _LOCAL_MAPPER.get().readTree(conn.getInputStream());
+    }
+
+    public static JsonNode readJsonNodeFromStr(String str) throws IOException, AuthenticationException {
+        return _LOCAL_MAPPER.get().readTree(new ByteArrayInputStream(str.getBytes()));
     }
 
     public static void updateAuthToken() {

@@ -88,7 +88,7 @@ public class ElephantContext {
       new HashMap<ApplicationType, List<Heuristic>>();
   private final Map<ApplicationType, HadoopMetricsAggregator> _typeToAggregator =
       new HashMap<ApplicationType, HadoopMetricsAggregator>();
-  private final Map<ApplicationType, ElephantFetcher> _typeToFetcher = new HashMap<ApplicationType, ElephantFetcher>();
+  public final Map<ApplicationType, ElephantFetcher> _typeToFetcher = new HashMap<ApplicationType, ElephantFetcher>();
   private final Map<String, Html> _heuristicToView = new HashMap<String, Html>();
   private Map<ApplicationType, List<JobType>> _appTypeToJobTypes = new HashMap<ApplicationType, List<JobType>>();
 

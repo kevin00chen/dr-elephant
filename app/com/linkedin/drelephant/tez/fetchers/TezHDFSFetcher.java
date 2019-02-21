@@ -15,11 +15,10 @@
 package com.linkedin.drelephant.tez.fetchers;
 
 import com.linkedin.drelephant.ElephantContext;
-import com.linkedin.drelephant.analysis.AnalyticJob;
-import com.linkedin.drelephant.analysis.ApplicationType;
-import com.linkedin.drelephant.analysis.ElephantFetcher;
+import com.linkedin.drelephant.analysis.*;
 import com.linkedin.drelephant.configurations.fetcher.FetcherConfigurationData;
 import com.linkedin.drelephant.tez.data.*;
+import com.linkedin.drelephant.tez.heuristics.MapperTimeHeuristic;
 import com.linkedin.drelephant.util.ThreadContextMR2;
 import com.linkedin.drelephant.util.Utils;
 import org.apache.commons.lang.StringUtils;
@@ -56,7 +55,7 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         Map<String, String> clusterToRM = new HashMap<String, String>();
         Configuration conf = new Configuration();
 
-        for (String clusterName : fetcherConfData.getParamsToCluster().keySet()) {
+        for (String clusterName : clusterParams.keySet()) {
             Utils.setClusterConf(conf, fetcherConfData.getParamsToCluster().get(clusterName));
             try {
 //                hdfsFilePathPrefix = conf.get(TEZ_HISTORY_DIR);
@@ -78,12 +77,20 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         Map<ApplicationType, ElephantFetcher> _typeToFetcher = ElephantContext.instance()._typeToFetcher;
         TezHDFSFetcher tezFetcher = (TezHDFSFetcher) _typeToFetcher.get(new ApplicationType("tez"));
         AnalyticJob analyticJob = new AnalyticJob();
-        analyticJob.setAppId("application_1550570429212_14040");
+        analyticJob.setAppId("application_1550656828536_11265");
         analyticJob.setClusterName("Data-Hive-ETL");
 //        analyticJob.setClusterName("test-hivemetrics");
-        analyticJob.setFinalStatus("SUCCESS");
+        analyticJob.setFinalStatus("SUCCEEDED");
 
-        tezFetcher.fetchData(analyticJob);
+        TezApplicationData jobData = tezFetcher.fetchData(analyticJob);
+        Map<ApplicationType, List<Heuristic>> _typeToHeuristics = ElephantContext.instance()._typeToHeuristics;
+        List<Heuristic> heuristics = _typeToHeuristics.get(new ApplicationType("TEZ"));
+
+        for (Heuristic heuristic : heuristics) {
+            HeuristicResult result = heuristic.apply(jobData);
+            System.out.println("===");
+        }
+
         System.out.println("===");
     }
 
@@ -126,13 +133,17 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
         Path appAttemptPath = getAppAttemptFilePath(fs, appId);
 
+        if (appAttemptPath == null) {
+            logger.info("Tez HDFS File not exists: " + appId);
+        }
+
         TezApplicationData jobData = new TezApplicationData();
         jobData.setAppId(appId);
 
         List<TezEntity> tezEvents = new ArrayList<TezEntity>();
 
         // 只分析运行成功任务的文件
-        if ("SUCCESS".equals(analyticJob.getFinalStatus())) {
+        if ("SUCCEEDED".equals(analyticJob.getFinalStatus())) {
             InputStream inputStream = new BufferedInputStream(fs.open(appAttemptPath));
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
             String line;
@@ -643,7 +654,7 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         }
 
         private long[] getTaskAttemptExecTime(TezTaskAttemptEntity tezTaskAttemptEntity, boolean isMapTask) throws IOException, AuthenticationException {
-            long startTime = tezTaskAttemptEntity.getStartTime();
+            long startTime = tezTaskAttemptEntity.getAttemptStartedTime();
             long finishTime = tezTaskAttemptEntity.getAttemptEndTime();
 
             long shuffleTime = 0;

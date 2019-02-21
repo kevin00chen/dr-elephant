@@ -615,16 +615,19 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
             for(int i=0; i < taskList.size(); i++) {
                 TezTaskData data = taskList.get(i);
-                TezTaskEntity tezTaskEntity = tezTaskEntityMap.get(data.getTaskId());
-                String countersStr = tezTaskEntity.getCounters();
+                String taskId = data.getTaskId();
+                if (tezTaskEntityMap.containsKey(taskId)) {
+                    TezTaskEntity tezTaskEntity = tezTaskEntityMap.get(taskId);
+                    String countersStr = tezTaskEntity.getCounters();
 
-                TezCounterData taskCounter = getTaskCounter(countersStr);
+                    TezCounterData taskCounter = getTaskCounter(countersStr);
 
-                TezTaskAttemptEntity tezTaskAttemptEntity = tezTaskEntity.getTezTaskAttemptEntity();
-                long[] taskExecTime = getTaskAttemptExecTime(tezTaskAttemptEntity, isMapTask);
+                    TezTaskAttemptEntity tezTaskAttemptEntity = tezTaskEntity.getTezTaskAttemptEntity();
+                    long[] taskExecTime = getTaskAttemptExecTime(tezTaskAttemptEntity, isMapTask);
 
-                data.setCounter(taskCounter);
-                data.setTime(taskExecTime);
+                    data.setCounter(taskCounter);
+                    data.setTime(taskExecTime);
+                }
             }
         }
 

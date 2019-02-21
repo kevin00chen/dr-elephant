@@ -83,13 +83,6 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         analyticJob.setFinalStatus("SUCCEEDED");
 
         TezApplicationData jobData = tezFetcher.fetchData(analyticJob);
-        Map<ApplicationType, List<Heuristic>> _typeToHeuristics = ElephantContext.instance()._typeToHeuristics;
-        List<Heuristic> heuristics = _typeToHeuristics.get(new ApplicationType("TEZ"));
-
-        for (Heuristic heuristic : heuristics) {
-            HeuristicResult result = heuristic.apply(jobData);
-            System.out.println("===");
-        }
 
         System.out.println("===");
     }

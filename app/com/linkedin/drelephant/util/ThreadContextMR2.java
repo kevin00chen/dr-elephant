@@ -1,10 +1,12 @@
 package com.linkedin.drelephant.util;
 
 import com.linkedin.drelephant.math.Statistics;
+import org.apache.commons.lang.CharUtils;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
@@ -82,7 +84,18 @@ public final class ThreadContextMR2 {
     }
 
     public static JsonNode readJsonNodeFromStr(String str) throws IOException, AuthenticationException {
-        return _LOCAL_MAPPER.get().readTree(new ByteArrayInputStream(str.getBytes()));
+        try {
+            return _LOCAL_MAPPER.get().readTree(new ByteArrayInputStream(str.getBytes()));
+        } catch (JsonParseException e) {
+            StringBuffer sb = new StringBuffer();
+            int size = str.length();
+            for (int i = 0; i < size; i ++) {
+                if (CharUtils.isAsciiControl(str.charAt(i)) == false) {
+                    sb.append(str.charAt(i));
+                }
+            }
+            return _LOCAL_MAPPER.get().readTree(new ByteArrayInputStream(sb.toString().getBytes()));
+        }
     }
 
     public static void updateAuthToken() {

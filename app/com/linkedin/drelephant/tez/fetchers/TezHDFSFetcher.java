@@ -138,11 +138,26 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         // 只分析运行成功任务的文件
         if ("SUCCEEDED".equals(analyticJob.getFinalStatus())) {
             InputStream inputStream = new BufferedInputStream(fs.open(appAttemptPath));
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            String line;
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            String line = "";
+            String newLine;
 
-            while((line = br.readLine())!=null){
+            while((newLine = br.readLine()) != null){
+                int length = newLine.length();
+                char lastChar = newLine.charAt(length - 1);
+
+                if (lastChar != '\u0001') {
+                    line += newLine;
+                    continue;
+                } else {
+                    if (!line.equals("")) {
+                        line += newLine;
+                    } else {
+                        line = newLine;
+                    }
+                }
                 tezEvents.add(_jsonFactory.parseToTezEntity(line));
+                line = "";
             }
             br.close();
         }

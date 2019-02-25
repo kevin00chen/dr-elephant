@@ -111,6 +111,12 @@ public class TezCounterData {
     S3N_LARGE_READ_OPS(GroupName.FileSystemCounters, "S3N_LARGE_READ_OPS", "S3N_LARGE_READ_OPS"),
     S3N_WRITE_OPS(GroupName.FileSystemCounters, "S3N_WRITE_OPS", "S3N_WRITE_OPS"),
 
+    S3_BYTES_READ(GroupName.FileSystemCounters, "S3_BYTES_READ", "S3_BYTES_READ"),
+    S3_BYTES_WRITTEN(GroupName.FileSystemCounters, "S3_BYTES_WRITTEN", "S3_BYTES_WRITTEN"),
+    S3_READ_OPS(GroupName.FileSystemCounters, "S3_READ_OPS", "S3_READ_OPS"),
+    S3_LARGE_READ_OPS(GroupName.FileSystemCounters, "S3_LARGE_READ_OPS", "S3_LARGE_READ_OPS"),
+    S3_WRITE_OPS(GroupName.FileSystemCounters, "S3_WRITE_OPS", "S3_WRITE_OPS"),
+
     REDUCE_INPUT_GROUPS(GroupName.TezTask, "REDUCE_INPUT_GROUPS", "REDUCE_INPUT_GROUPS"),
     REDUCE_INPUT_RECORDS(GroupName.TezTask, "REDUCE_INPUT_RECORDS", "REDUCE_INPUT_RECORDS"),
     COMBINE_INPUT_RECORDS(GroupName.TezTask, "COMBINE_INPUT_RECORDS", "COMBINE_INPUT_RECORDS"),

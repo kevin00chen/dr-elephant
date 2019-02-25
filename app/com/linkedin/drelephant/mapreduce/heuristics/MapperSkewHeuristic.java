@@ -34,7 +34,8 @@ public class MapperSkewHeuristic extends GenericSkewHeuristic {
         MapReduceCounterData.CounterName.HDFS_BYTES_READ,
         MapReduceCounterData.CounterName.S3_BYTES_READ,
         MapReduceCounterData.CounterName.S3A_BYTES_READ,
-        MapReduceCounterData.CounterName.S3N_BYTES_READ
+        MapReduceCounterData.CounterName.S3N_BYTES_READ,
+        MapReduceCounterData.CounterName.S3_BYTES_READ
     ), heuristicConfData);
   }
 

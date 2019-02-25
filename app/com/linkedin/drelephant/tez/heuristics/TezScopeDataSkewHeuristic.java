@@ -36,7 +36,8 @@ public class TezScopeDataSkewHeuristic extends GenericDataSkewHeuristic {
     super(Arrays.asList(
         TezCounterData.CounterName.HDFS_BYTES_READ,
         TezCounterData.CounterName.S3A_BYTES_READ,
-        TezCounterData.CounterName.S3N_BYTES_READ
+        TezCounterData.CounterName.S3N_BYTES_READ,
+        TezCounterData.CounterName.S3_BYTES_READ
     ), heuristicConfData);
   }
 

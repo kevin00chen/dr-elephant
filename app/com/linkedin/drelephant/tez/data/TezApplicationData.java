@@ -34,6 +34,7 @@ public class TezApplicationData implements HadoopApplicationData {
   private TezTaskData[] _mapTasks;
   private TezTaskData[] _scopeTasks;
   private TezCounterData _counterHolder;
+  private TezApplicationEntity _tezApplicationEntity;
 
   private long _submitTime = 0;
   private long _startTime = 0;
@@ -138,6 +139,14 @@ public class TezApplicationData implements HadoopApplicationData {
   public TezApplicationData setFinishTime(long finishTime) {
     this._finishTime = finishTime;
     return this;
+  }
+
+  public TezApplicationEntity getTezApplicationEntity() {
+    return _tezApplicationEntity;
+  }
+
+  public void setTezApplicationEntity(TezApplicationEntity _tezApplicationEntity) {
+    this._tezApplicationEntity = _tezApplicationEntity;
   }
 
   public String toString(){

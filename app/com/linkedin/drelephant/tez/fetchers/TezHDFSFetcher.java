@@ -167,6 +167,7 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         reloadTezEntities(tezApplicationEntity);
 
         jobData.setConf(tezApplicationEntity.getConf());
+        jobData.setTezApplicationEntity(tezApplicationEntity);
 
         List<TezTaskData> mapperListAggregate = new ArrayList<TezTaskData>();
         List<TezTaskData> reducerListAggregate = new ArrayList<TezTaskData>();
@@ -184,23 +185,23 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
             if (state.equals("SUCCEEDED")) {
                 jobData.setSucceeded(true);
-
-                List<TezTaskData> mapperList = new ArrayList<TezTaskData>();
-                List<TezTaskData> reducerList = new ArrayList<TezTaskData>();
-                List<TezTaskData> scopeTaskList = new ArrayList<TezTaskData>();
-
-                _jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList);
-
-                if(mapperList.size() + reducerList.size() + scopeTaskList.size() > maxSize){
-                    mapperListAggregate = mapperList;
-                    reducerListAggregate = reducerList;
-                    scopeListAggregate = scopeTaskList;
-                    maxSize = mapperList.size() + reducerList.size() + scopeTaskList.size();
-                }
-            }
-            if (state.equals("FAILED")) {
+            } else  {
                 jobData.setSucceeded(false);
             }
+            List<TezTaskData> mapperList = new ArrayList<TezTaskData>();
+            List<TezTaskData> reducerList = new ArrayList<TezTaskData>();
+            List<TezTaskData> scopeTaskList = new ArrayList<TezTaskData>();
+
+            _jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList);
+
+            if(mapperList.size() + reducerList.size() + scopeTaskList.size() > maxSize){
+                mapperListAggregate = mapperList;
+                reducerListAggregate = reducerList;
+                scopeListAggregate = scopeTaskList;
+                maxSize = mapperList.size() + reducerList.size() + scopeTaskList.size();
+            }
+
+
         }
 
         TezTaskData[] mapperData = mapperListAggregate.toArray(new TezTaskData[mapperListAggregate.size()]);
@@ -250,6 +251,9 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
             tezTaskEntity.setTezTaskAttemptEntity(tezTaskAttemptEntity);
 
             String relatedVertexId = tezTaskEntity.getRelatedVertexId();
+            if (StringUtils.isEmpty(relatedVertexId)) {
+                relatedVertexId = tezTaskEntity.getTaskId().substring(0, tezTaskEntity.getTaskId().lastIndexOf("_")).replace("task_", "vertex_");
+            }
             tezApplicationEntity.getAppAttemptEntity().getTezVertexEntityMap().get(relatedVertexId).getTezTaskEntityMap().put(taskId, tezTaskEntity);
         }
 
@@ -628,7 +632,7 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
         private void getTaskData(List<TezTaskData> taskList, boolean isMapTask, Map<String, TezTaskEntity> tezTaskEntityMap) throws IOException, AuthenticationException {
 
-            for(int i=0; i < taskList.size(); i++) {
+            for(int i = 0; i < taskList.size(); i++) {
                 TezTaskData data = taskList.get(i);
                 String taskId = data.getTaskId();
                 if (tezTaskEntityMap.containsKey(taskId)) {
@@ -638,10 +642,14 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
                     TezCounterData taskCounter = getTaskCounter(countersStr);
 
                     TezTaskAttemptEntity tezTaskAttemptEntity = tezTaskEntity.getTezTaskAttemptEntity();
-                    long[] taskExecTime = getTaskAttemptExecTime(tezTaskAttemptEntity, isMapTask);
+                    if (tezTaskAttemptEntity == null) {
+                        taskList.remove(i);
+                    } else {
+                        long[] taskExecTime = getTaskAttemptExecTime(tezTaskAttemptEntity, isMapTask);
+                        data.setCounter(taskCounter);
+                        data.setTime(taskExecTime);
+                    }
 
-                    data.setCounter(taskCounter);
-                    data.setTime(taskExecTime);
                 }
             }
         }

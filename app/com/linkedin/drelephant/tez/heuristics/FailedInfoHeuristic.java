@@ -101,7 +101,7 @@ public class FailedInfoHeuristic implements Heuristic<TezApplicationData> {
   public HeuristicResult apply(TezApplicationData data) {
     Severity severity = Severity.NONE;
 
-    if(data.getSucceeded()) {
+    if(!data.getSucceeded()) {
       severity = Severity.CRITICAL;
     }
 

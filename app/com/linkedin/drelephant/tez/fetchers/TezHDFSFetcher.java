@@ -676,6 +676,10 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
             long startTime = tezTaskAttemptEntity.getAttemptStartedTime();
             long finishTime = tezTaskAttemptEntity.getAttemptEndTime();
 
+            if (startTime <= 0) {
+                startTime = tezTaskAttemptEntity.getCreationTime();
+            }
+
             long shuffleTime = 0;
             long mergeTime = 0;
 

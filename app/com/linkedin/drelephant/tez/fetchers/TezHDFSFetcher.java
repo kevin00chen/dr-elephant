@@ -174,6 +174,7 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
         List<TezTaskData> scopeListAggregate = new ArrayList<TezTaskData>();
 
         String dagCountersStr = "";
+        Map<String, Map<String, List<TezTaskData>>> result = new HashMap<String, Map<String, List<TezTaskData>>>();
 
         for (String dagId : tezApplicationEntity.getAppAttemptEntity().getDagEntities().keySet()) {
             TezDagEntity tezDagEntity = tezApplicationEntity.getAppAttemptEntity().getDagEntities().get(dagId);
@@ -192,7 +193,7 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
             List<TezTaskData> reducerList = new ArrayList<TezTaskData>();
             List<TezTaskData> scopeTaskList = new ArrayList<TezTaskData>();
 
-            _jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList);
+            result.putAll(_jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList));
 
             if(mapperList.size() + reducerList.size() + scopeTaskList.size() > maxSize){
                 mapperListAggregate = mapperList;
@@ -210,7 +211,8 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
         TezCounterData dagCounter = _jsonFactory.getDagCounter(dagCountersStr);
 
-        jobData.setCounters(dagCounter).setMapTaskData(mapperData).setReduceTaskData(reducerData).setScopeTasks(scopeTaskData);
+        jobData.setCounters(dagCounter).setMapTaskData(mapperData).setReduceTaskData(reducerData)
+                .setVtxMapTasks(result.get("map")).setVtxReduceTasks(result.get("reduce")).setScopeTasks(scopeTaskData);
 
         return jobData;
     }
@@ -587,23 +589,27 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
             return holder;
         }
 
-        private void getTaskDataAll(TezAppAttemptEntity tezAppAttemptEntity, String dagId, List<TezTaskData> mapperList,
-                                    List<TezTaskData> reducerList, List<TezTaskData> scopeTaskList) throws IOException, AuthenticationException {
+        private Map<String, Map<String, List<TezTaskData>>> getTaskDataAll(TezAppAttemptEntity tezAppAttemptEntity, String dagId, List<TezTaskData> mapperList,
+                                                                           List<TezTaskData> reducerList, List<TezTaskData> scopeTaskList) throws IOException, AuthenticationException {
             boolean isMapVertex = false;
             Map<String, TezVertexEntity> tezVertexEntityMap = tezAppAttemptEntity.getDagEntities().get(dagId).getTezVertexEntityMap();
+            Map<String, Map<String, List<TezTaskData>>> result = new HashMap<String, Map<String, List<TezTaskData>>>();
+            result.put("map", new HashMap<String, List<TezTaskData>>());
+            result.put("reduce", new HashMap<String, List<TezTaskData>>());
 
             for (String vertexId : tezVertexEntityMap.keySet()) {
                 TezVertexEntity vertex = tezVertexEntityMap.get(vertexId);
                 String vertexClass = vertex.getProcessorClassName();
+                System.out.println("Vertex: " + vertexId);
 
                 if (vertexClass != null) {
                     if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.MapTezProcessor")) {
                         isMapVertex = true;
-                        getTaskDataByVertexId(vertex.getTezTaskEntityMap(), mapperList, isMapVertex);
+                        result.get("map").put(vertexId, getTaskDataByVertexId(vertex.getTezTaskEntityMap(), mapperList, isMapVertex));
                     }
                     else if (vertexClass.equals("org.apache.hadoop.hive.ql.exec.tez.ReduceTezProcessor")) {
                         isMapVertex = false;
-                        getTaskDataByVertexId(vertex.getTezTaskEntityMap(), reducerList, isMapVertex);
+                        result.get("reduce").put(vertexId, getTaskDataByVertexId(vertex.getTezTaskEntityMap(), reducerList, isMapVertex));
                     }
                     else if (vertexClass.equals("org.apache.pig.backend.hadoop.executionengine.tez.runtime.PigProcessor")) {
                         isMapVertex = false;
@@ -611,23 +617,41 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
                     }
                 }
             }
+            return result;
         }
 
-        private void getTaskDataByVertexId(Map<String, TezTaskEntity> tezTaskEntityMap, List<TezTaskData> taskList,
-                                           boolean isMapTask) throws IOException, AuthenticationException {
+        private List<TezTaskData> getTaskDataByVertexId(Map<String, TezTaskEntity> tezTaskEntityMap, List<TezTaskData> taskList,
+                                                        boolean isMapTask) throws IOException, AuthenticationException {
+            List<TezTaskData> result = new ArrayList<TezTaskData>();
+
+            Map<String, Integer> statCnt = new HashMap<String, Integer>();
+            Map<String, List<TezTaskEntity>> taskByStat = new HashMap<String, List<TezTaskEntity>>();
 
             for (String taskId : tezTaskEntityMap.keySet()) {
                 TezTaskEntity tezTaskEntity = tezTaskEntityMap.get(taskId);
                 String state = tezTaskEntity.getStatus();
+
+                statCnt.put(state, statCnt.getOrDefault(state, 0) + 1);
+                List<TezTaskEntity> x = taskByStat.getOrDefault(state, new ArrayList<TezTaskEntity>());
+                x.add(tezTaskEntity);
+                taskByStat.put(state, x);
+
                 String attemptId = tezTaskEntity.getSuccessfulAttemptId();
                 if (!"SUCCEEDED".equals(state)) {
                     attemptId = tezTaskEntity.getFirstFailedAttemptId();
                 }
 
-                taskList.add(new TezTaskData(taskId, attemptId));
+                TezTaskData tmpTezTaskData = new TezTaskData(taskId, attemptId);
+                taskList.add(tmpTezTaskData);
+                result.add(tmpTezTaskData);
+            }
+
+            for (String state : statCnt.keySet()) {
+                System.out.println(state + ": " + statCnt.get(state));
             }
 
             getTaskData(taskList, isMapTask, tezTaskEntityMap);
+            return result;
         }
 
         private void getTaskData(List<TezTaskData> taskList, boolean isMapTask, Map<String, TezTaskEntity> tezTaskEntityMap) throws IOException, AuthenticationException {
@@ -674,11 +698,10 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
         private long[] getTaskAttemptExecTime(TezTaskAttemptEntity tezTaskAttemptEntity, boolean isMapTask) throws IOException, AuthenticationException {
             long startTime = tezTaskAttemptEntity.getAttemptStartedTime();
-            long finishTime = tezTaskAttemptEntity.getAttemptEndTime();
-
             if (startTime <= 0) {
                 startTime = tezTaskAttemptEntity.getCreationTime();
             }
+            long finishTime = tezTaskAttemptEntity.getAttemptEndTime();
 
             long shuffleTime = 0;
             long mergeTime = 0;

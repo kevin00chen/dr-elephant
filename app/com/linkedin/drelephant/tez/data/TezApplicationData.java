@@ -18,6 +18,9 @@ package com.linkedin.drelephant.tez.data;
 import com.linkedin.drelephant.analysis.ApplicationType;
 import com.linkedin.drelephant.analysis.HadoopApplicationData;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -32,6 +35,8 @@ public class TezApplicationData implements HadoopApplicationData {
   private boolean _succeeded = true;
   private TezTaskData[] _reduceTasks;
   private TezTaskData[] _mapTasks;
+  private Map<String, TezTaskData[]> _vtxMapTasks;
+  private Map<String, TezTaskData[]> _vtxReduceTasks;
   private TezTaskData[] _scopeTasks;
   private TezCounterData _counterHolder;
   private TezApplicationEntity _tezApplicationEntity;
@@ -136,6 +141,32 @@ public class TezApplicationData implements HadoopApplicationData {
     return this;
   }
 
+  public Map<String, TezTaskData[]> getVtxMapTasks() {
+    return _vtxMapTasks;
+  }
+
+  public TezApplicationData setVtxMapTasks(Map<String, List<TezTaskData>> _vtxMapTasks) {
+    this._vtxMapTasks = new HashMap<String, TezTaskData[]>();
+    for (String vtxId : _vtxMapTasks.keySet()) {
+      TezTaskData[] mapperData = _vtxMapTasks.get(vtxId).toArray(new TezTaskData[_vtxMapTasks.get(vtxId).size()]);
+      this._vtxMapTasks.put(vtxId, mapperData);
+    }
+    return this;
+  }
+
+  public Map<String, TezTaskData[]> getVtxReduceTasks() {
+    return _vtxReduceTasks;
+  }
+
+  public TezApplicationData setVtxReduceTasks(Map<String, List<TezTaskData>> _vtxReduceTasks) {
+    this._vtxReduceTasks = new HashMap<String, TezTaskData[]>();
+    for (String vtxId : _vtxReduceTasks.keySet()) {
+      TezTaskData[] mapperData = _vtxReduceTasks.get(vtxId).toArray(new TezTaskData[_vtxReduceTasks.get(vtxId).size()]);
+      this._vtxReduceTasks.put(vtxId, mapperData);
+    }
+    return this;
+  }
+
   public TezApplicationData setFinishTime(long finishTime) {
     this._finishTime = finishTime;
     return this;
@@ -152,4 +183,5 @@ public class TezApplicationData implements HadoopApplicationData {
   public String toString(){
     return APPLICATION_TYPE.toString() + " " + _appId;
   }
+
 }

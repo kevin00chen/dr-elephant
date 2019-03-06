@@ -53,12 +53,12 @@ public abstract class GenericDataSkewHeuristic implements Heuristic<TezApplicati
   private static final String FILES_SEVERITY = "files_severity";
 
   // Default value of parameters
-  private double[] numTasksLimits = {10, 50, 100, 200};   // Number of map or reduce tasks
+  public double[] numTasksLimits = {10, 50, 100, 200};   // Number of map or reduce tasks
   private double[] deviationLimits = {2, 4, 8, 16};       // Deviation in i/p bytes btw 2 groups
   private double[] filesLimits = {1d / 8, 1d / 4, 1d / 2, 1d};  // Fraction of HDFS Block Size
 
-  private HeuristicConfigurationData _heuristicConfData;
-  private List<TezCounterData.CounterName> _counterNames;
+  public HeuristicConfigurationData _heuristicConfData;
+  public List<TezCounterData.CounterName> _counterNames;
 
   private void loadParameters() {
     Map<String, String> paramMap = _heuristicConfData.getParamMap();
@@ -193,14 +193,14 @@ public abstract class GenericDataSkewHeuristic implements Heuristic<TezApplicati
     return result;
   }
 
-  private String convertTimeMs(long timeMs) {
+  public String convertTimeMs(long timeMs) {
     if (timeMs < 1000) {
       return Long.toString(timeMs) + " msec";
     }
     return DurationFormatUtils.formatDuration(timeMs, "HH:mm:ss") + " HH:MM:SS";
   }
 
-  private Severity getDeviationSeverity(long averageMin, long averageDiff) {
+  public Severity getDeviationSeverity(long averageMin, long averageDiff) {
     if (averageMin <= 0) {
       averageMin = 1;
     }
@@ -209,7 +209,7 @@ public abstract class GenericDataSkewHeuristic implements Heuristic<TezApplicati
         deviationLimits[3]);
   }
 
-  private Severity getFilesSeverity(long value) {
+  public Severity getFilesSeverity(long value) {
     return Severity.getSeverityAscending(value, filesLimits[0], filesLimits[1], filesLimits[2], filesLimits[3]);
   }
 }

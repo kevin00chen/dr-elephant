@@ -28,11 +28,11 @@ import java.util.Arrays;
 /**
  * This Heuristic analyses the skewness in the task input data
  */
-public class ReducerDataSkewHeuristic extends GenericDataSkewHeuristic {
+public class ReducerDataSkewHeuristic extends GenericTezDataSkewHeuristic {
   private static final Logger logger = Logger.getLogger(ReducerDataSkewHeuristic.class);
 
   public ReducerDataSkewHeuristic(HeuristicConfigurationData heuristicConfData) {
-    super(Arrays.asList(TezCounterData.CounterName.SHUFFLE_BYTES), heuristicConfData);
+    super(Arrays.asList(TezCounterData.CounterName.SHUFFLE_BYTES), heuristicConfData, "reduce");
   }
 
   @Override

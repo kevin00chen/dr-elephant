@@ -49,9 +49,7 @@ public abstract class GenericTezDataSkewHeuristic extends GenericDataSkewHeurist
             TezTaskData[] vtxTasks = vtxTasksMap.get(vtxId);
             if (vtxTasks != null) {
                 HeuristicResult tmpResult = getResultByTasks(vtxTasks, "Vertex名称", vtxId);
-                if (tmpResult.getSeverity().getValue() > maxSeverity.getValue()) {
-                    maxSeverity = tmpResult.getSeverity();
-                }
+                maxSeverity = Severity.max(maxSeverity, tmpResult.getSeverity());
                 for (HeuristicResultDetails tmp : tmpResult.getHeuristicResultDetails()) {
                     result.addResultDetail(tmp.getName(), tmp.getValue(), tmp.getDetails());
                 }

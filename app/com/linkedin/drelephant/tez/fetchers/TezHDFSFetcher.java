@@ -175,6 +175,8 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
 
         String dagCountersStr = "";
         Map<String, Map<String, List<TezTaskData>>> result = new HashMap<String, Map<String, List<TezTaskData>>>();
+        result.put("map", new HashMap<String, List<TezTaskData>>());
+        result.put("reduce", new HashMap<String, List<TezTaskData>>());
 
         for (String dagId : tezApplicationEntity.getAppAttemptEntity().getDagEntities().keySet()) {
             TezDagEntity tezDagEntity = tezApplicationEntity.getAppAttemptEntity().getDagEntities().get(dagId);
@@ -193,14 +195,22 @@ public class TezHDFSFetcher implements ElephantFetcher<TezApplicationData> {
             List<TezTaskData> reducerList = new ArrayList<TezTaskData>();
             List<TezTaskData> scopeTaskList = new ArrayList<TezTaskData>();
 
-            result.putAll(_jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList));
+            Map<String, Map<String, List<TezTaskData>>> tmpResult = _jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList);
+            result.get("map").putAll(tmpResult.get("map"));
+            result.get("reduce").putAll(tmpResult.get("reduce"));
 
-            if(mapperList.size() + reducerList.size() + scopeTaskList.size() > maxSize){
-                mapperListAggregate = mapperList;
-                reducerListAggregate = reducerList;
-                scopeListAggregate = scopeTaskList;
-                maxSize = mapperList.size() + reducerList.size() + scopeTaskList.size();
-            }
+            mapperListAggregate.addAll(mapperList);
+            reducerListAggregate.addAll(reducerList);
+            scopeListAggregate.addAll(scopeTaskList);
+
+//            result.putAll(_jsonFactory.getTaskDataAll(tezApplicationEntity.getAppAttemptEntity(), dagId, mapperList, reducerList, scopeTaskList));
+//
+//            if(mapperList.size() + reducerList.size() + scopeTaskList.size() > maxSize){
+//                mapperListAggregate = mapperList;
+//                reducerListAggregate = reducerList;
+//                scopeListAggregate = scopeTaskList;
+//                maxSize = mapperList.size() + reducerList.size() + scopeTaskList.size();
+//            }
 
 
         }

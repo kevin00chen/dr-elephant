@@ -54,7 +54,7 @@ public abstract class GenericTezDataSkewHeuristic extends GenericDataSkewHeurist
                     result.addResultDetail(tmp.getName(), tmp.getValue(), tmp.getDetails());
                 }
             } else {
-                System.out.println();
+//                System.out.println();
             }
 
         }

@@ -131,18 +131,18 @@ public abstract class GenericTezDataSkewHeuristic extends GenericDataSkewHeurist
                 new HeuristicResult(_heuristicConfData.getClassName(), _heuristicConfData.getHeuristicName(), severity,
                         Utils.getHeuristicScore(severityData, tasks.length));
 
-        result.addResultDetail(resultKey, vertexName);
-        result.addResultDetail("Data skew (Number of tasks)", Integer.toString(tasks.length));
+        result.addResultDetail(resultKey, vertexName, vertexName, true);
+        result.addResultDetail("Data skew (Number of tasks)", Integer.toString(tasks.length), vertexName, true);
         result.addResultDetail("Data skew (Group A)",
-                groups[0].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg1) + " avg");
+                groups[0].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg1) + " avg", vertexName, true);
         result.addResultDetail("Data skew (Group B)",
-                groups[1].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg2) + " avg");
+                groups[1].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg2) + " avg", vertexName, true);
 
-        result.addResultDetail("Time skew (Number of tasks)", Integer.toString(tasks.length));
+        result.addResultDetail("Time skew (Number of tasks)", Integer.toString(tasks.length), vertexName, true);
         result.addResultDetail("Time skew (Group A)",
-                groupsTime[0].length + " tasks @ " + convertTimeMs(timeAvg1) + " avg");
+                groupsTime[0].length + " tasks @ " + convertTimeMs(timeAvg1) + " avg", vertexName, true);
         result.addResultDetail("Time skew (Group B)",
-                groupsTime[1].length + " tasks @ " + convertTimeMs(timeAvg2) + " avg");
+                groupsTime[1].length + " tasks @ " + convertTimeMs(timeAvg2) + " avg", vertexName, true);
 
         return result;
     }

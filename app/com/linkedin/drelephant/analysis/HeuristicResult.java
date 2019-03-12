@@ -118,6 +118,16 @@ public class HeuristicResult {
   }
 
   /**
+   * Add the App Heuristic Result Detail entry
+   */
+  public void addResultDetail(String name, String value, String relatedEntity, boolean isRelatedEntity) {
+    if (isRelatedEntity)
+      _heuristicResultDetails.add(new HeuristicResultDetails(name, value, null, relatedEntity));
+    else
+      this.addResultDetail(name, value, relatedEntity);
+  }
+
+  /**
    * Add the App Heuristic Result Detail without details
    */
   public void addResultDetail(String name, String value) {

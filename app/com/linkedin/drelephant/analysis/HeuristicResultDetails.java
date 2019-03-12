@@ -28,6 +28,7 @@ public class HeuristicResultDetails {
   private String _name;
   private String _value;
   private String _details;
+  private String _relatedEntity;
 
   public HeuristicResultDetails(String name, String value) {
     this(name, value, null);
@@ -37,6 +38,13 @@ public class HeuristicResultDetails {
     this._name = name;
     this._value = value;
     this._details = details;
+  }
+
+  public HeuristicResultDetails(String name, String value, String details, String relatedEntity) {
+    this._name = name;
+    this._value = value;
+    this._details = details;
+    this._relatedEntity = relatedEntity;
   }
 
   public String getDetails() {
@@ -49,5 +57,9 @@ public class HeuristicResultDetails {
 
   public String getName() {
     return _name;
+  }
+
+  public String getRelatedEntity() {
+    return _relatedEntity;
   }
 }

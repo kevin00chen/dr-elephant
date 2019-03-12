@@ -32,8 +32,8 @@ public class DatabaseAccess implements Serializable {
 
 
   public int[] upsertYarnAppHeuristicResultDetails(Object[][] objects) throws SQLException {
-    String sql = "replace into yarn_app_heuristic_result_details(yarn_app_heuristic_result_id, name, value, details) " +
-            "values (?,?,?,?)";
+    String sql = "replace into yarn_app_heuristic_result_details(yarn_app_heuristic_result_id, name, value, details, related_entity) " +
+            "values (?,?,?,?,?)";
     logger.debug("Replace Into yarn_app_heuristic_result_details ===>\n" + sql);
     return queryRunner.batch(sql,
             objects);

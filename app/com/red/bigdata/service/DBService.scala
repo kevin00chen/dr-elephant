@@ -53,7 +53,7 @@ class DBService(dao: DatabaseAccess) {
         val tasks = new ArrayBuffer[Array[Any]]
         for (heuristicResultDetail: AppHeuristicResultDetails <- heuristicResultDetailList) {
           val task = new ArrayBuffer[Any]
-          task.++=(Array(id, heuristicResultDetail.name, heuristicResultDetail.value, heuristicResultDetail.details))
+          task.++=(Array(id, heuristicResultDetail.name, heuristicResultDetail.value, heuristicResultDetail.details, heuristicResultDetail.relatedEntity))
           tasks += task.toArray
         }
         dao.upsertYarnAppHeuristicResultDetails(tasks.toArray.asInstanceOf[Array[Array[AnyRef]]])

@@ -61,4 +61,6 @@ public class AppHeuristicResultDetails extends Model {
 
   @Column(nullable = true)
   public String details;
+
+  public String relatedEntity;
 }

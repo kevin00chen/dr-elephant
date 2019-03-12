@@ -51,7 +51,7 @@ public abstract class GenericTezDataSkewHeuristic extends GenericDataSkewHeurist
                 HeuristicResult tmpResult = getResultByTasks(vtxTasks, "Vertex名称", vtxId);
                 maxSeverity = Severity.max(maxSeverity, tmpResult.getSeverity());
                 for (HeuristicResultDetails tmp : tmpResult.getHeuristicResultDetails()) {
-                    result.addResultDetail(tmp.getName(), tmp.getValue(), tmp.getDetails());
+                    result.addResultDetail(tmp.getName(), tmp.getValue(), tmp.getDetails(), tmp.getRelatedEntity());
                 }
             } else {
 //                System.out.println();
@@ -131,18 +131,18 @@ public abstract class GenericTezDataSkewHeuristic extends GenericDataSkewHeurist
                 new HeuristicResult(_heuristicConfData.getClassName(), _heuristicConfData.getHeuristicName(), severity,
                         Utils.getHeuristicScore(severityData, tasks.length));
 
-        result.addResultDetail(resultKey, vertexName, vertexName, true);
-        result.addResultDetail("Data skew (Number of tasks)", Integer.toString(tasks.length), vertexName, true);
+        result.addResultDetail(resultKey, vertexName, null, vertexName);
+        result.addResultDetail("Data skew (Number of tasks)", Integer.toString(tasks.length), null, vertexName);
         result.addResultDetail("Data skew (Group A)",
-                groups[0].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg1) + " avg", vertexName, true);
+                groups[0].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg1) + " avg", null, vertexName);
         result.addResultDetail("Data skew (Group B)",
-                groups[1].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg2) + " avg", vertexName, true);
+                groups[1].length + " tasks @ " + FileUtils.byteCountToDisplaySize(avg2) + " avg", null, vertexName);
 
-        result.addResultDetail("Time skew (Number of tasks)", Integer.toString(tasks.length), vertexName, true);
+        result.addResultDetail("Time skew (Number of tasks)", Integer.toString(tasks.length), null, vertexName);
         result.addResultDetail("Time skew (Group A)",
-                groupsTime[0].length + " tasks @ " + convertTimeMs(timeAvg1) + " avg", vertexName, true);
+                groupsTime[0].length + " tasks @ " + convertTimeMs(timeAvg1) + " avg", null, vertexName);
         result.addResultDetail("Time skew (Group B)",
-                groupsTime[1].length + " tasks @ " + convertTimeMs(timeAvg2) + " avg", vertexName, true);
+                groupsTime[1].length + " tasks @ " + convertTimeMs(timeAvg2) + " avg", null, vertexName);
 
         return result;
     }
